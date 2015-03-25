@@ -1,0 +1,3 @@
+[submodule "lib/serde/msgpack"]
+	path = lib/serde/msgpack
+	url = git@github.com:umegaya/msgpack-unity.git
