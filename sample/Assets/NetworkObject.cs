@@ -13,13 +13,15 @@ public class NetworkObject : MonoBehaviour {
 	public string LoginActorId = "srv";
 
 	void Start () {
-		//create actor to call server RPC
+		//create actor to call server RPC (see Update() for detail usage)
 		_actor = NetworkManager.instance.NewActor("tcp://"+HostName+":"+HostPort+"/"+LoginActorId);
 		//register this game object so that method can call from server
 		NetworkManager.instance.Register("/sys", this);
 		_last_update = 0;
 	}
 
+	//this function called from server RPC directly. 
+	//*public* is important to make it accessible from server
 	public string GetUnityVersion(bool test) {
 		if (test) {
 			return "Unity Test";
