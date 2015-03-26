@@ -7,7 +7,13 @@ yue-unity integration lib and sample
 usage
 =====
 
-you need to [docker](https://www.docker.com/) and [yue](https://github.com/umegaya/yue) to be installed.
+you need to [docker](https://www.docker.com/) and [yue](https://github.com/umegaya/yue) to be installed, and should run yue server like following
+```
+cd path_to_yue_repository
+./yue sample/unity_test_server.lua
+```
+
+then, 
 
 1. Create GameObject which attached [NetworkManager.cs](https://github.com/umegaya/yue-unity/blob/master/sample/Assets/NetworkManager.cs)
 
