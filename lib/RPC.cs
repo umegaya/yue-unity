@@ -286,7 +286,7 @@ namespace Yue
 		static uint seed = 0;
 		static Dictionary<string, Connection> connections = new Dictionary<string, Connection>();
 		static Dictionary<uint, YieldContext> dispatchers = new Dictionary<uint, YieldContext>();
-		static Dictionary<string, MonoBehaviour> delegates = new Dictionary<string, MonoBehaviour>();
+		static Dictionary<string, object> delegates = new Dictionary<string, object>();
 		static List<Socket> sockets = new List<Socket>();
 		static Serde serde = new Serde();
 		static public Connection Get(string url) {
@@ -308,14 +308,14 @@ namespace Yue
 		static public void Yield(uint msgid, CallAttr attr, ResponseDelegate d) {
 			dispatchers[msgid] = new YieldContext { d = d, timeout_at = Time.time + attr.timeout };
 		}
-		static public void Register(string name, MonoBehaviour b) {
-			delegates[name] = b;
+		static public void Register(string name, object o) {
+			delegates[name] = o;
 		}
-		static public object CallMethodOnTheFly(MonoBehaviour b, string method, object[] args) {
-			Type t = b.GetType();
+		static public object CallMethodOnTheFly(object o, string method, object[] args) {
+			Type t = o.GetType();
 			MethodInfo m = t.GetMethod(method);
 			if (m != null) {
-				return m.Invoke(b, args);
+				return m.Invoke(o, args);
 			}
 			return null;
 		}
@@ -348,10 +348,10 @@ namespace Yue
 								}
 								else if (resp.ServerCall) {
 									// TODO : enable to register delegate, and dispatch call
-									MonoBehaviour b;
+									object o;
 									try {
-										if (delegates.TryGetValue(resp.UUID, out b)) {
-											var body = CallMethodOnTheFly(b, resp.Method, resp.ArgsList);
+										if (delegates.TryGetValue(resp.UUID, out o)) {
+											var body = CallMethodOnTheFly(o, resp.Method, resp.ArgsList);
 											if (!resp.ServerNotify) {
 												c.WriteStream(MakeResponse(resp, body, null));
 											}
