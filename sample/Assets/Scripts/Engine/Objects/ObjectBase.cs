@@ -10,7 +10,6 @@ namespace ScriptEngine {
 	public class ObjectBase {
 		public ObjectTypeBase Type { get; set; }
 		public TeamBase Team { get; set; }
-		public CellBase Cell { get; set; }
 		public ObjectiveBase Objective { get; set; }
 		public List<SkillBase> Skills { get; set; }
 		public int Hp { get; set; }

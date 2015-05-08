@@ -11,39 +11,39 @@ public class GameField {
 	}
 	
 	//variables
-	bool debug = false;
-	Lua env = null;		//for local execution
-	ScriptEngine.Fields.Base fld;
-	Actor actor;		//for remote execution
+	bool _debug = false;
+	Lua _env = null;		//for local execution
+	ScriptEngine.Fields.Base _field;
+	Actor _actor;		//for remote execution
 	
 	//ctor/dtor
 	public GameField(bool debug = false) {
-		this.debug = debug;
+		_debug = debug;
 	}
 	public void CleanUp() {
-		if (env != null) {
-			env.Dispose();
-			env = null;
+		if (_env != null) {
+			_env.Dispose();
+			_env = null;
 		}
-		fld = null;
-		actor = null;
+		_field = null;
+		_actor = null;
 	}
 
 	//initialization
 	public void InitLocal(object field_data, object event_player) {
 		CleanUp();
-		env = new Lua();
-		env.LoadCLRPackage(); //enable .net objects
-		env.RegisterFunction("print", typeof(GameField).GetMethod("print"));
-		env["DEBUG"] = this.debug;
-		fld = new ScriptEngine.Fields.Base();
+		_env = new Lua();
+		_env.LoadCLRPackage(); //enable .net objects
+		_env.RegisterFunction("print", typeof(GameField).GetMethod("print"));
+		_env["DEBUG"] = _debug;
+		_field = new ScriptEngine.Fields.Base();
 		
-		ScriptLoader.Load(env, "startup.lua");
-		Call("Initialize", fld, field_data);
+		ScriptLoader.Load(_env, "startup.lua");
+		Call("Initialize", _field, field_data);
 	}
 	public void InitRemote(string url, object event_player) {
 		CleanUp();
-		actor = NetworkManager.instance.NewActor(url);
+		_actor = NetworkManager.instance.NewActor(url);
 	}
 	
 	//method
@@ -62,8 +62,8 @@ public class GameField {
 	//helper
 	object[] Call(string function, params object[] args) {
 		object[] result = new object[0];
-		if(env == null) return result;
-		LuaFunction lf = env.GetFunction(function);
+		if(_env == null) return result;
+		LuaFunction lf = _env.GetFunction(function);
 		if(lf == null) return result;
 		try {
 			// Note: calling a function that does not 

@@ -285,6 +285,7 @@ namespace Yue
 	public class TransportManager {
 		static uint seed = 0;
 		static Dictionary<string, Connection> connections = new Dictionary<string, Connection>();
+		static List<Connection> closed = new List<Connection>();
 		static Dictionary<uint, YieldContext> dispatchers = new Dictionary<uint, YieldContext>();
 		static Dictionary<string, object> delegates = new Dictionary<string, object>();
 		static List<Socket> sockets = new List<Socket>();
@@ -347,7 +348,6 @@ namespace Yue
 									}
 								}
 								else if (resp.ServerCall) {
-									// TODO : enable to register delegate, and dispatch call
 									object o;
 									try {
 										if (delegates.TryGetValue(resp.UUID, out o)) {
@@ -367,6 +367,10 @@ namespace Yue
 							catch (MsgPack.BuffShortException e) {
 								//Debug.Log(e);
 							}
+							catch (IOException e) {
+								Debug.Log("socket may be closed:"+e);
+								closed.Add(c);
+							}
 							catch (Exception e) {
 								Debug.Log("unexpected error:"+e);
 							}
@@ -374,6 +378,14 @@ namespace Yue
 					}
 				}
 			}
+			//remove closed connection so that next RPC with same url can create new connection
+			if (closed.Count > 0) {
+				foreach (Connection c in closed) {
+					c.Close();
+				}
+				closed.Clear();
+			}
+			//check timeout and remove too old RPC entry
 			var now = Time.time;
 			foreach (KeyValuePair<uint, YieldContext> pair in dispatchers) {
 				var ctx = pair.Value;
