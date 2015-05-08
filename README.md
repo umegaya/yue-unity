@@ -1,7 +1,7 @@
 yue-unity
 =========
 
-yue-unity integration lib and sample
+yue-unity integration lib and sample with NLua installation
 
 
 usage
