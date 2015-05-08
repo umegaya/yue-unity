@@ -3,22 +3,18 @@ using System.Collections.Generic;
 using ScriptEngine;
 
 namespace ScriptEngine {
-	namespace CellTypes {
-		public class Base : Util.FixData {
+	public class CellTypeBase : Util.FixData {
+	}
+	public class CellBase {
+		// cell type
+		public CellTypeBase Type { get; set; }
+		// team_id => all objects belongs to team_id
+		public Dictionary<string, List<ObjectBase>> Teams { get; set; }
+		
+		public CellBase(CellTypeBase t) {
+			this.Type = t;
+			this.Teams = new Dictionary<string, List<ObjectBase>>();
 		}
 	}
-	namespace Cells {
-		public class Base {
-			// cell type
-			public CellTypes.Base Type { get; set; }
-			// team_id => all objects belongs to team_id
-			public Dictionary<string, List<Objects.Base>> Teams { get; set; }
-			
-			public Base(CellTypes.Base t) {
-				this.Type = t;
-				this.Teams = new Dictionary<string, List<Objects.Base>>();
-			}
-		}
-		public class Factory : Util.Factory<CellTypes.Base, Base> {}
-	}
+	public class CellFactory : Util.Factory<CellTypeBase, CellBase> {}
 }

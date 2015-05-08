@@ -55,8 +55,8 @@ public class GameField {
 		Call("Update", dt);
 	}
 	
-	public void Enter(object user_data = null) {
-		Call("Enter", user_data);
+	public void Enter(Renderer r, object user_data = null) {
+		Call("Enter", r.Id, r, user_data);
 	}
 	
 	//helper
@@ -79,7 +79,7 @@ public class GameField {
 		}
 		return result;		
 	}
-	
+		
 	static string DumpTrace(Lua st, int upto) {
 		string ret = "";
 		for (int i = upto; i >= 0; i--) {
@@ -92,9 +92,17 @@ public class GameField {
 	}
 	public static void print(params object[] args) {
 		string text = "";
-		for (int i=0; i < args.Length; i++) {
-			text += (args[i].ToString() + "\t");
+		if (args != null) {
+			for (int i=0; i < args.Length; i++) {
+				if (args[i] != null) {
+					text += (args[i].ToString() + "\t");
+				}
+				else {
+					text += "null\t";
+				}
+			}
 		}
 	    Debug.Log(text);
 	}
+	
 }

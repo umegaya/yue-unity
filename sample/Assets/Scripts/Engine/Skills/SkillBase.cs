@@ -3,18 +3,14 @@ using System.Collections;
 using ScriptEngine;
 
 namespace ScriptEngine {
-	namespace SkillTypes {
-		public class Base : Util.FixData {
+	public class SkillTypeBase : Util.FixData {
+	}
+	public class SkillBase {
+		public SkillTypeBase Type { get; set; }
+		
+		public SkillBase(SkillTypeBase t) {
+			this.Type = t;
 		}
 	}
-	namespace Skills {
-		public class Base {
-			public SkillTypes.Base Type { get; set; }
-			
-			public Base(SkillTypes.Base t) {
-				this.Type = t;
-			}
-		}
-		public class Factory : Util.Factory<SkillTypes.Base, Base> {}
-	}
+	public class SkillFactory : Util.Factory<SkillTypeBase, SkillBase> {}
 }

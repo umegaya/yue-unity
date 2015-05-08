@@ -3,18 +3,14 @@ using System.Collections.Generic;
 using ScriptEngine;
 
 namespace ScriptEngine {
-	namespace ObjectiveTypes {
-		public class Base : Util.FixData {
-		}
+	public class ObjectiveTypeBase : Util.FixData {
 	}
-	namespace Objectives {
-		public class Base {
-			public ObjectiveTypes.Base Type { get; set; }
+	public class ObjectiveBase {
+		public ObjectiveTypeBase Type { get; set; }
 
-			public Base(ObjectiveTypes.Base t) {
-				this.Type = t;
-			}
+		public ObjectiveBase(ObjectiveTypeBase t) {
+			this.Type = t;
 		}
-		public class Factory : Util.Factory<ObjectiveTypes.Base, Base> {}
 	}
+	public class ObjectiveFactory : Util.Factory<ObjectiveTypeBase, ObjectiveBase> {}
 }

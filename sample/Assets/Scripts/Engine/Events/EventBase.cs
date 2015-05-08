@@ -3,18 +3,14 @@ using System.Collections.Generic;
 using ScriptEngine;
 
 namespace ScriptEngine {
-	namespace EventTypes {
-		public class Base : Util.FixData {
+	public class EventTypeBase : Util.FixData {
+	}
+	public class EventBase {
+		public EventTypeBase Type { get; set; }
+		
+		public EventBase(EventTypeBase t) {
+			this.Type = t;
 		}
 	}
-	namespace Events {
-		public class Base {
-			public EventTypes.Base Type { get; set; }
-			
-			public Base(EventTypes.Base t) {
-				this.Type = t;
-			}
-		}
-		public class Factory : Util.Factory<EventTypes.Base, Base> {}
-	}
+	public class EventFactory : Util.Factory<EventTypeBase, EventBase> {}
 }

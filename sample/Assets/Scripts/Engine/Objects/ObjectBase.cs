@@ -3,29 +3,25 @@ using System.Collections.Generic;
 using ScriptEngine;
 
 namespace ScriptEngine {
-	namespace ObjectTypes {
-		public class Base : Util.FixData {	
-			//where to display this object? "user" : "user side", "enemy" : "enemy side"
-			public string DisplayPosition { get; set; }
+	public class ObjectTypeBase : Util.FixData {	
+		//where to display this object? "user" : "user side", "enemy" : "enemy side"
+		public string DisplayPosition { get; set; }
+	}
+	public class ObjectBase {
+		public ObjectTypeBase Type { get; set; }
+		public TeamBase Team { get; set; }
+		public CellBase Cell { get; set; }
+		public ObjectiveBase Objective { get; set; }
+		public List<SkillBase> Skills { get; set; }
+		public int Hp { get; set; }
+		public int x { get; set; }
+		public int y { get; set; }
+		
+		//ctor
+		public ObjectBase(ObjectTypeBase t) {
+			this.Type = t;
+			this.Skills = new List<SkillBase>();
 		}
 	}
-	namespace Objects {
-		public class Base {
-			public ObjectTypes.Base Type { get; set; }
-			public Teams.Base Team { get; set; }
-			public Cells.Base Cell { get; set; }
-			public Objectives.Base Objective { get; set; }
-			public List<Skills.Base> Skills { get; set; }
-			public int Hp { get; set; }
-			public int x { get; set; }
-			public int y { get; set; }
-			
-			//ctor
-			public Base(ObjectTypes.Base t) {//, string team_id, string objective_id, List<string> skill_ids) {
-				this.Type = t;
-				this.Skills = new List<Skills.Base>();
-			}
-		}
-		public class Factory : Util.Factory<ObjectTypes.Base, Base> {}
-	}
+	public class ObjectFactory : Util.Factory<ObjectTypeBase, ObjectBase> {}
 }

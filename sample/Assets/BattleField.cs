@@ -17,12 +17,12 @@ public class BattleField : MonoBehaviour {
 			var user_data = new List<string>() { "foo", "bar", "baz" };
 			var field_data = new List<string>() { "hoge", "fuga", "fugu" };
 			gf.InitLocal(field_data, renderer);
-			gf.Enter(user_data);
+			gf.Enter(renderer, user_data);
 		}
 		else {
 			//TODO : initialize remote game field
 			gf.InitRemote(url, renderer);
-			gf.Enter();
+			gf.Enter(renderer);
 		}
 	}
 
