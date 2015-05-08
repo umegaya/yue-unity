@@ -11,12 +11,14 @@ public class GameField {
 	}
 	
 	//variables
+	bool debug = false;
 	Lua env = null;		//for local execution
 	ScriptEngine.Fields.Base fld;
 	Actor actor;		//for remote execution
 	
 	//ctor/dtor
-	public GameField() {
+	public GameField(bool debug = false) {
+		this.debug = debug;
 	}
 	public void CleanUp() {
 		if (env != null) {
@@ -28,15 +30,16 @@ public class GameField {
 	}
 
 	//initialization
-	public void InitLocal(object user_data, object field_data, object event_player) {
+	public void InitLocal(object field_data, object event_player) {
 		CleanUp();
 		env = new Lua();
 		env.LoadCLRPackage(); //enable .net objects
 		env.RegisterFunction("print", typeof(GameField).GetMethod("print"));
+		env["DEBUG"] = this.debug;
 		fld = new ScriptEngine.Fields.Base();
 		
 		ScriptLoader.Load(env, "startup.lua");
-		Call("Initialize", fld, user_data, field_data);
+		Call("Initialize", fld, field_data);
 	}
 	public void InitRemote(string url, object event_player) {
 		CleanUp();
@@ -50,6 +53,10 @@ public class GameField {
 	
 	public void Update(double dt) {
 		Call("Update", dt);
+	}
+	
+	public void Enter(object user_data = null) {
+		Call("Enter", user_data);
 	}
 	
 	//helper
