@@ -28,6 +28,14 @@ public class NetworkObject : MonoBehaviour {
         // Make the first button. If it is pressed, Application.Loadlevel (1) will be executed
         if(GUI.Button(new Rect(20,40,180,20), "Close Connection")) {
 			_actor.Call((resp, err) => {
+				if (resp != null) {
+				}
+				else if (err is ServerException) {
+					Debug.Log((err as ServerException).Message);
+				}
+				else {
+					Debug.Log("other exception:" + err);
+				}
 				return null;
 			}, "close_me");
 		}
