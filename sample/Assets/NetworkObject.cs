@@ -7,6 +7,7 @@ public class NetworkObject : MonoBehaviour {
 
 	Actor _actor;
 	float _last_update;
+	double _latency = 0;
 
 	public string HostName = "192.168.59.103";
 	public int HostPort = 8080;
@@ -14,11 +15,27 @@ public class NetworkObject : MonoBehaviour {
 
 	void Start () {
 		//create actor to call server RPC (see Update() for detail usage)
-		_actor = NetworkManager.instance.NewActor("tcp://"+HostName+":"+HostPort+"/"+LoginActorId);
+		_actor = NetworkManager.instance.NewActor("tcp://"+HostName+":"+HostPort+"/"+LoginActorId, ConnectionWatcher);
 		//register this game object so that method can call from server
 		NetworkManager.instance.Register("/sys", this);
 		_last_update = 0;
 	}
+	
+	void OnGUI () {
+        // Make a background box
+        GUI.Box(new Rect(10,10,200,90), "Menu");
+    
+        // Make the first button. If it is pressed, Application.Loadlevel (1) will be executed
+        if(GUI.Button(new Rect(20,40,180,20), "Close Connection")) {
+			_actor.Call((resp, err) => {
+				return null;
+			}, "close_me");
+		}
+    
+        // Make the second button.
+        GUI.Label(new Rect(20,70,180,20), "Latency:" + System.Math.Ceiling(1000 * _latency) + "ms");
+    }
+
 
 	//this function called from server RPC directly. 
 	//*public* is important to make it accessible from server
@@ -31,6 +48,15 @@ public class NetworkObject : MonoBehaviour {
 		}
 	}
 	
+	public void ConnectionWatcher(string url, bool opened) {
+		if (opened) {
+			Debug.Log("connection open:" + url);
+		}
+		else {
+			Debug.Log("connection close:" + url);			
+		}
+	}
+	
 	// Update is called once per frame
 	void Update () {
 		var now = Time.time;
@@ -39,13 +65,18 @@ public class NetworkObject : MonoBehaviour {
 			// callback, method_name, arg1, arg2, ...
 			_actor.Call((resp, err) => {
 				if (resp != null) {
-					Debug.Log("resp:"+resp.Args(0));
+					var ts = ((double)resp.Args(0));
+					_latency = (Time.time - ts);
+					//Debug.Log("latency:"+_latency);
 				}
 				else if (err is ServerException) {
 					Debug.Log((err as ServerException).Message);
 				}
+				else {
+					Debug.Log("other exception:" + err);
+				}
 				return null;
-			}, "echo", "hoge");
+			}, "echo", now);
 		}
 	}
 }

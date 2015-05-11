@@ -25,8 +25,11 @@ public class GameField {
 			_env.Dispose();
 			_env = null;
 		}
+		if (_actor != null) {
+			_actor.Destroy();
+			_actor = null;
+		}
 		_field = null;
-		_actor = null;
 	}
 
 	//initialization

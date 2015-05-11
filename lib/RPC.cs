@@ -124,6 +124,7 @@ namespace Yue
 		}
 	};
 	public delegate object ResponseDelegate(Response resp, Exception e);
+	public delegate void ConnectionStateDelegate(string url, bool opened); //true if connection opened, otherwise closed.
 
 	// exceptions;
 	public class RPCTimeoutException : Exception {
@@ -288,6 +289,7 @@ namespace Yue
 		static List<Connection> closed = new List<Connection>();
 		static Dictionary<uint, YieldContext> dispatchers = new Dictionary<uint, YieldContext>();
 		static Dictionary<string, object> delegates = new Dictionary<string, object>();
+		static Dictionary<string, ConnectionStateDelegate> watchers = new Dictionary<string, ConnectionStateDelegate>();
 		static List<Socket> sockets = new List<Socket>();
 		static Serde serde = new Serde();
 		static public Connection Get(string url) {
@@ -297,14 +299,36 @@ namespace Yue
 			}
 			c = Connection.New(url);
 			connections[url] = c;
+			PublishConnectionState(url, true);
 			return c;
+		}
+		static public void AddWatcher(string url, ConnectionStateDelegate d) {
+			ConnectionStateDelegate tmp;
+			if (watchers.TryGetValue(url, out tmp)) {
+				Debug.Log("addw:"+url);
+				tmp += d;
+			}
+			else {
+				Debug.Log("neww:"+url);
+				watchers.Add(url, d);
+			}
+		}
+		static public void RemoveWatcher(string url, ConnectionStateDelegate d) {
+			ConnectionStateDelegate tmp;
+				Debug.Log("rmw:"+url);
+			if (watchers.TryGetValue(url, out tmp)) {
+				tmp -= d;
+			}
 		}
 		static public uint NewMsgId() {
 			seed++;
 			return seed;
 		}
 		static public void Remove(Connection c) {
-			connections.Remove(c.URL);
+			if (connections.ContainsKey(c.URL)) {
+				connections.Remove(c.URL);
+				PublishConnectionState(c.URL, false);
+			}
 		}
 		static public void Yield(uint msgid, CallAttr attr, ResponseDelegate d) {
 			dispatchers[msgid] = new YieldContext { d = d, timeout_at = Time.time + attr.timeout };
@@ -404,26 +428,57 @@ namespace Yue
 				error == null ? body : error
 			};
 		}
+		static void PublishConnectionState(string url, bool opened) {
+			ConnectionStateDelegate tmp;
+			if (watchers.TryGetValue(url, out tmp)) {
+				tmp(url, opened);
+			}			
+		}
 	}
 	public class Actor {
 		static CallAttr attr = new CallAttr();
-		public Actor(string url) {
+		public ConnectionStateDelegate watcher;
+		public void DefaultConnectionWatcher(string url, bool opened) {
+			if (opened) {
+				Debug.Log("connection open:" + url);
+			}
+			else {
+				Debug.Log("connection close:" + url);			
+			}			
+		}
+		public Actor(string url, ConnectionStateDelegate d = null) {
 			Parse(url);
+			if (d == null) {
+				d = DefaultConnectionWatcher;
+			}
+			watcher = d;
+			TransportManager.AddWatcher(URL, watcher);
+		}
+		public void Destroy() {
+			if (watcher != null) {
+				TransportManager.RemoveWatcher(URL, watcher);
+			}			
 		}
 		public string Id { get; set; }
 		public string Host { get; set; }
 		public string Proto { get; set; }
+		public string URL { get { return Proto+"://"+Host; } }
 		public void Call(ResponseDelegate d, string method, params object[] args) {
-			var c = TransportManager.Get(Proto+"://"+Host);
-			string real_method = ParseMethodName(method, args, ref attr);
-			if (attr.notify) {
-				c.Notify(this, attr, real_method, args);
-				return;
+			try {
+				var c = TransportManager.Get(URL);
+				string real_method = ParseMethodName(method, args, ref attr);
+				if (attr.notify) {
+					c.Notify(this, attr, real_method, args);
+					return;
+				}
+				if (attr.async) {
+					//TODO: implement async
+				}
+				c.Send(this, attr, real_method, args, d);
 			}
-			if (attr.async) {
-				//TODO: implement async
+			catch (Exception e) {
+				d(null, e);
 			}
-			c.Send(this, attr, real_method, args, d);
 		}
 		string ParseMethodName(string method, object[] args, ref CallAttr attr) {
 			attr.notify = false;

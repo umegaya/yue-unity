@@ -25,8 +25,8 @@ public class NetworkManager : MonoBehaviour {
 		TransportManager.Poll();
 	}
 
-	public Actor NewActor(string url) {
-		return new Actor(url);
+	public Actor NewActor(string url, Yue.ConnectionStateDelegate d = null) {
+		return new Actor(url, d);
 	}
 
 	public void Register(string name, MonoBehaviour g) {
