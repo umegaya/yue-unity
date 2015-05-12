@@ -1,15 +1,32 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Reflection;
+using NLua;
 using ScriptEngine;
 
 namespace ScriptEngine {
+	public class ObjectWrapper {
+		static LuaFunction wrapper;
+		static public object Wrap(object o, string src = null) {
+			if (src != null) {
+				wrapper.Call(new object[2] {o, src});
+			}
+			else {
+				wrapper.Call(new object[1] {o});				
+			}
+			return o;
+		}
+		static public void Initialize(LuaFunction f) {
+			wrapper = f;
+		}
+	}
 	namespace Util {
 		public class RawFixData<K> {
 			public K Id { get; set; }
 			public string Name { get; set; }
 			public string Class { get; set; }
 			public string TypeClass { get; set; }
+			public string Script { get ; set; }
 			public RawFixData() {}
 		}
 		public class FixData : RawFixData<string> {}
@@ -82,7 +99,7 @@ namespace ScriptEngine {
 					System.Type type = System.Type.GetType(t.Class);
 					if (type.IsSubclassOf(typeof(O))) {
 						ConstructorInfo ctor = type.GetConstructor(new[] { typeof(T) });
-						return (O)ctor.Invoke(new object[] { t });
+						return (O)ObjectWrapper.Wrap(ctor.Invoke(new object[] { t }));
 					}
 					Debug.LogError("data error: "+t.Class+" is not subclass of "+typeof(O));
 				}

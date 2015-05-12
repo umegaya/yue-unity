@@ -31,14 +31,21 @@ public class GameField {
 		}
 		_field = null;
 	}
+	
+	public Lua NewVM(bool debug) {
+		var env = new Lua();
+		env.LoadCLRPackage(); //enable .net objects
+		env.RegisterFunction("print", typeof(GameField).GetMethod("print"));
+		env["DEBUG"] = debug; //on/off debug mode
+		//add our script search path (as 1st priority)
+		env.DoString(string.Format(@"package.path='{0}?.lua;'..package.path", ScriptLoader.SearchPath));
+		return env;
+	}
 
 	//initialization
 	public void InitLocal(object field_data, object event_player) {
 		CleanUp();
-		_env = new Lua();
-		_env.LoadCLRPackage(); //enable .net objects
-		_env.RegisterFunction("print", typeof(GameField).GetMethod("print"));
-		_env["DEBUG"] = _debug;
+		_env = NewVM(_debug);
 		_field = new ScriptEngine.Fields.Base();
 		
 		ScriptLoader.Load(_env, "startup.lua");
@@ -55,7 +62,10 @@ public class GameField {
 	}
 	
 	public void Update(double dt) {
+		//var ts = Time.realtimeSinceStartup;
 		Call("Update", dt);
+		//var et = Time.realtimeSinceStartup;
+		//Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
 	}
 	
 	public void Enter(Renderer r, object user_data = null) {

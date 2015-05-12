@@ -305,17 +305,14 @@ namespace Yue
 		static public void AddWatcher(string url, ConnectionStateDelegate d) {
 			ConnectionStateDelegate tmp;
 			if (watchers.TryGetValue(url, out tmp)) {
-				Debug.Log("addw:"+url);
 				tmp += d;
 			}
 			else {
-				Debug.Log("neww:"+url);
 				watchers.Add(url, d);
 			}
 		}
 		static public void RemoveWatcher(string url, ConnectionStateDelegate d) {
 			ConnectionStateDelegate tmp;
-				Debug.Log("rmw:"+url);
 			if (watchers.TryGetValue(url, out tmp)) {
 				tmp -= d;
 			}

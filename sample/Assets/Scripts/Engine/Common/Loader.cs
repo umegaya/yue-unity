@@ -4,10 +4,11 @@ using NLua;
 
 namespace ScriptEngine {
 	class ScriptLoader {
+		static public string SearchPath = Application.dataPath+"/Scripts/src/";
 		static public void Load(Lua env, string file) {
 			string code;
 #if UNITY_EDITOR
-			code = System.IO.File.ReadAllText(Application.dataPath+"/Scripts/src/"+file);
+			code = System.IO.File.ReadAllText(SearchPath+file);
 #else
 			Debug.LogError("TODO: load script from remote server");	
 #endif
