@@ -6,7 +6,7 @@ public class Renderer {
 		Debug.Log("Play:"+ev);
 	}
 	
-	public Renderer() {
-		this.Id = 1;
+	public Renderer(int id = 1) {
+		this.Id = id;
 	}
 }

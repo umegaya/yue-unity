@@ -35,6 +35,9 @@ namespace ScriptEngine {
 			static RawVault() {
 				map = new Dictionary<K, T>();
 			}
+			static public string MakeFullClassName(string class_name) {
+				return (string)("ScriptEngine."+class_name);
+			}
 			//get specified FixData from key k
 			static public T Get(K k) {
 				T t;
@@ -48,18 +51,22 @@ namespace ScriptEngine {
 				}
 			}
 			static void Put(K k, Dictionary<string, object> d) {
+				System.Type type = null;
 				T t = Get(k);
 				bool update = true;
 				if (t == null) {
-					System.Type type;
-					object typeclass;
+					object typeclass = null;
 					if (d.TryGetValue("TypeClass", out typeclass) && typeclass is string) {
-						type = System.Type.GetType((string)typeclass);				
+						type = System.Type.GetType(MakeFullClassName((string)typeclass));
+						if (type == null) {
+							Debug.LogError("data error: "+typeclass+" not found");
+							return;
+						}
 					}
 					else {
 						type = typeof(T);
 					}
-					if (type.IsSubclassOf(typeof(T))) {
+					if (type == typeof(T) || type.IsSubclassOf(typeof(T))) {
 						ConstructorInfo ctor = type.GetConstructor(System.Type.EmptyTypes);
 						t = (T)ctor.Invoke(new object[] {});
 						update = false;
@@ -69,23 +76,23 @@ namespace ScriptEngine {
 						return;
 					}
 				}
-				SetData(ref t, d);
+				SetData(ref t, type, d);
 				t.Id = k;
 				if (!update) {
 					map.Add(k, t);
 				}
 			}
-			static void SetData(ref T t, Dictionary<string, object> d) {
-				System.Type type = typeof(T);
+			static void SetData(ref T t, System.Type type, Dictionary<string, object> d) {
 				foreach (KeyValuePair<string, object> e in d) {
 					try {
 						object[] args = new object[1] { e.Value };
 						type.InvokeMember(e.Key,
 						    BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
 						    System.Type.DefaultBinder, t, args);	
+
 					}
 					catch (System.Exception error) {
-						Debug.LogError("fail to set property:"+error);
+						Debug.LogError("fail to set property to "+type+":"+error);
 					}
 				}
 			}
@@ -95,13 +102,28 @@ namespace ScriptEngine {
 		public class RawFactory<K, T, O> : RawVault<K, T> where T : RawFixData<K>, new() {
 			static public O Create(K k) {
 				T t = Get(k);
+				System.Type type;
 				if (t != null) {
-					System.Type type = System.Type.GetType(t.Class);
-					if (type.IsSubclassOf(typeof(O))) {
-						ConstructorInfo ctor = type.GetConstructor(new[] { typeof(T) });
-						return (O)ObjectWrapper.Wrap(ctor.Invoke(new object[] { t }));
+					if (t.Class == null) {
+						type = typeof(O);
 					}
-					Debug.LogError("data error: "+t.Class+" is not subclass of "+typeof(O));
+					else {
+						type = System.Type.GetType(MakeFullClassName(t.Class));
+						if (type == null) {
+							Debug.LogError("data error: "+t.Class+" not found");
+							return default(O);
+						}
+						if (!type.IsSubclassOf(typeof(O))) {
+							Debug.LogError("data error: "+t.Class+" is not subclass of "+typeof(O));
+							return default(O);
+						}
+					}
+					ConstructorInfo ctor = type.GetConstructor(new System.Type [] {});
+					object o = ctor.Invoke(new object[] {});
+					type.InvokeMember("Type",
+						    BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty,
+						    System.Type.DefaultBinder, o, new object[1] { t });	
+					return (O)ObjectWrapper.Wrap(o);
 				}
 				return default(O);
 			}

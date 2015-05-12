@@ -13,7 +13,7 @@ public class GameField {
 	//variables
 	bool _debug = false;
 	Lua _env = null;		//for local execution
-	ScriptEngine.Fields.Base _field;
+	ScriptEngine.FieldBase _field;
 	Actor _actor;		//for remote execution
 	
 	//ctor/dtor
@@ -46,7 +46,7 @@ public class GameField {
 	public void InitLocal(object field_data, object event_player) {
 		CleanUp();
 		_env = NewVM(_debug);
-		_field = new ScriptEngine.Fields.Base();
+		_field = new ScriptEngine.FieldBase();
 		
 		ScriptLoader.Load(_env, "startup.lua");
 		Call("Initialize", _field, field_data);
@@ -62,10 +62,14 @@ public class GameField {
 	}
 	
 	public void Update(double dt) {
-		//var ts = Time.realtimeSinceStartup;
-		Call("Update", dt);
-		//var et = Time.realtimeSinceStartup;
-		//Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
+		var now = Time.time;
+		if ((now - _field.LastUpdate) > 1) {
+			//var ts = Time.realtimeSinceStartup;
+			Call("Update", dt);
+			//var et = Time.realtimeSinceStartup;
+			//Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
+			_field.LastUpdate = now;
+		}			
 	}
 	
 	public void Enter(Renderer r, object user_data = null) {

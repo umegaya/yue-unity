@@ -7,9 +7,7 @@ namespace ScriptEngine {
 	}
 	public class EventBase {
 		public EventTypeBase Type { get; set; }
-		
-		public EventBase(EventTypeBase t) {
-			this.Type = t;
+		public EventBase() {
 		}
 	}
 	public class EventFactory : Util.Factory<EventTypeBase, EventBase> {}

@@ -13,11 +13,13 @@ namespace ScriptEngine {
 		//team type
 		public TeamTypeBase Type { get; set; }
 		//objects belongs to this team
-		public List<ObjectBase> BelongsTo { get; set; }
+		public Dictionary<int, ObjectBase> BelongsTo { get; set; }
+		//total count of popped as this team
+		public int TotalPopCount { get; set; }
 		
-		public TeamBase(TeamTypeBase t) {
-			this.Type = t;
-			this.BelongsTo = new List<ObjectBase>();
+		public TeamBase() {
+			this.BelongsTo = new Dictionary<int, ObjectBase>();
+			this.TotalPopCount = 0;
 		}
 	}
 	public class TeamFactory : Util.Factory<TeamTypeBase, TeamBase> {}

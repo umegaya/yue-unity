@@ -8,8 +8,7 @@ namespace ScriptEngine {
 	public class SkillBase {
 		public SkillTypeBase Type { get; set; }
 		
-		public SkillBase(SkillTypeBase t) {
-			this.Type = t;
+		public SkillBase() {
 		}
 	}
 	public class SkillFactory : Util.Factory<SkillTypeBase, SkillBase> {}
