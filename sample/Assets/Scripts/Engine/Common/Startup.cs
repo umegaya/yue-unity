@@ -12,6 +12,8 @@ namespace ScriptEngine {
 			ObjectiveFactory.Initialize(datas["Objectives"]);
 			SkillFactory.Initialize(datas["Skills"]);
 			TeamFactory.Initialize(datas["Teams"]);
+			GroupFactory.Initialize(datas["Groups"]);
+			ArrangementFactory.Initialize(datas["Arrangements"]);
 			ObjectFactory.Initialize(datas["Objects"]);
 		}
 	}

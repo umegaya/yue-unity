@@ -15,6 +15,8 @@ namespace ScriptEngine {
 		public List<ObjectiveBase> Objectives { get; set; }
 		//all events
 		public List<EventBase> Events { get; set; }
+		//object arrangement
+		public ArrangementBase Arrangement { get; set; }
 		//last update
 		public float LastUpdate { get; set; }
 		//this field finished?
@@ -37,7 +39,7 @@ namespace ScriptEngine {
 				var rows = new List<CellBase>(this.SizeX);
 				for (int j = 0; j < this.SizeX; j++) {//x
 					rows.Add(CellFactory.Create(ids[j][i]));
-				}					
+				}
 				this.Cells.Add(rows);
 			}	
 		}

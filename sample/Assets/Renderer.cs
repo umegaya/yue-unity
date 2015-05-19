@@ -1,12 +1,28 @@
 using UnityEngine;
+using MiniJSON;
+using NLua;
 
-public class Renderer {
-	public int Id { get; set; }
-	public void Play(object ev) {
-		Debug.Log("Play:"+ev);
+public class Renderer : MonoBehaviour {
+	//singleton
+	private static Renderer _instance;
+ 	public static Renderer instance
+    {
+        get
+        {
+            if(_instance == null)
+                _instance = GameObject.FindObjectOfType<Renderer>();
+            return _instance;
+        }
+    }
+	public int Id = 1;
+	
+	void Start () {
 	}
 	
-	public Renderer(int id = 1) {
-		this.Id = id;
+	//battle event receiver.
+	//LuaTable almost acts like Dictionary. 
+	//you can get property by data[hoge], and iterate it by foreach (KeyValuePair<object, object> e in data) {}. 
+	public void Play(string type, LuaTable data) {
+		Debug.Log("Play:"+type+"|"+Json.Serialize(GameField.ToDictionary(data)));
 	}
 }

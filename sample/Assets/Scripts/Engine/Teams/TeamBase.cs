@@ -14,12 +14,15 @@ namespace ScriptEngine {
 		public TeamTypeBase Type { get; set; }
 		//objects belongs to this team
 		public Dictionary<int, ObjectBase> BelongsTo { get; set; }
-		//total count of popped as this team
-		public int TotalPopCount { get; set; }
+		//user belongs to this team
+		public Dictionary<int, User> UserBelongsTo { get; set; }
+		//current score
+		public int Score { get; set; }
 		
 		public TeamBase() {
 			this.BelongsTo = new Dictionary<int, ObjectBase>();
-			this.TotalPopCount = 0;
+			this.UserBelongsTo = new Dictionary<int, User>();
+			this.Score = 0;
 		}
 	}
 	public class TeamFactory : Util.Factory<TeamTypeBase, TeamBase> {}

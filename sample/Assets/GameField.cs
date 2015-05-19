@@ -64,10 +64,10 @@ public class GameField {
 	public void Update(double dt) {
 		var now = Time.time;
 		if ((now - _field.LastUpdate) > 1) {
-			//var ts = Time.realtimeSinceStartup;
+			var ts = Time.realtimeSinceStartup;
 			Call("Update", dt);
-			//var et = Time.realtimeSinceStartup;
-			//Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
+			var et = Time.realtimeSinceStartup;
+			Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
 			_field.LastUpdate = now;
 		}			
 	}
@@ -95,6 +95,21 @@ public class GameField {
 			throw e;
 		}
 		return result;		
+	}
+	
+	//its just for debugging purpose (for dumping as JSON string). 
+	//LuaTable already mostly act like Dictionary, so most of case you don't need this.
+	static public Dictionary<object, object> ToDictionary(LuaTable t) {
+		var d = new Dictionary<object, object>();
+		foreach (KeyValuePair<object, object> e in t) {
+			if (e.Value is LuaTable) {
+				d[e.Key] = ToDictionary(e.Value as LuaTable);
+			}
+			else {
+				d[e.Key] = e.Value;
+			}
+		}
+		return d;
 	}
 		
 	static string DumpTrace(Lua st, int upto) {

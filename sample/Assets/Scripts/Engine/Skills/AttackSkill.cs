@@ -4,6 +4,7 @@ using ScriptEngine;
 
 namespace ScriptEngine {
 	public class AttackSkillType : SkillTypeBase {
-		public float Ratio { get; set; }
+		public string BonusType { get; set; }
+		public float Bonus { get; set; }
 	}
 }

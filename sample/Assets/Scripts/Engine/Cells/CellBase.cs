@@ -44,6 +44,7 @@ namespace ScriptEngine {
 		public Partition EnemySide { get; set; }
 		public List<Partition> UserSide { get; set; }
 		public Dictionary<int, ObjectBase> ObjectMap { get; set; }
+		public ObjectBase FindObject(int id) { return this.ObjectMap[id]; }
 		public CellBase() {
 			this.EnemySide = new Partition();
 			this.UserSide = new List<Partition>();

@@ -31,7 +31,7 @@ namespace ScriptEngine {
 		}
 		public class FixData : RawFixData<string> {}
 		public class RawVault<K, T> where T : RawFixData<K>, new() {
-			static Dictionary<K, T> map;
+			static protected Dictionary<K, T> map;
 			static RawVault() {
 				map = new Dictionary<K, T>();
 			}
@@ -101,6 +101,10 @@ namespace ScriptEngine {
 		
 		public class RawFactory<K, T, O> : RawVault<K, T> where T : RawFixData<K>, new() {
 			static public O Create(K k) {
+				if (map.Count <= 0) {
+					Debug.LogError("factory not initialized:"+typeof(O));
+					return default(O);
+				}
 				T t = Get(k);
 				System.Type type;
 				if (t != null) {

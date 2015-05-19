@@ -4,7 +4,6 @@ using System.Collections.Generic;
 public class BattleField : MonoBehaviour {
 
 	GameField gf;
-	Renderer renderer;
 	
 	public bool local = true;
 	public bool debug = false;
@@ -14,16 +13,15 @@ public class BattleField : MonoBehaviour {
 		InitFixData();
 		gf = new GameField(this.debug);
 		if (local) {
-			renderer = new Renderer();
 			var user_data = TestUserData();
 			var field_data = TestFieldData();
-			gf.InitLocal(field_data, renderer);
-			gf.Enter(renderer, user_data);
+			gf.InitLocal(field_data, GetComponent<UnityEngine.Renderer>());
+			gf.Enter(Renderer.instance, user_data);
 		}
 		else {
 			//TODO : initialize remote game field
-			gf.InitRemote(url, renderer);
-			gf.Enter(renderer);
+			gf.InitRemote(url, Renderer.instance);
+			gf.Enter(Renderer.instance);
 		}
 	}
 
@@ -40,7 +38,7 @@ public class BattleField : MonoBehaviour {
 				}
 			},
 			{
-				"Arrangements", new List<string> {}
+				"Arrangement", "sandbagland"
 			},
 			{
 				"Objectives", new List<string> {
@@ -106,6 +104,7 @@ public class BattleField : MonoBehaviour {
 							{"Name", "雪原"},
 							{"TypeClass", "DOTCellType"},
 							{"Script", "cells/dot.lua"},
+							{"DamageName", "寒波"},
 							{"DamagePerTick", 10}
 						}
 					}
@@ -121,7 +120,18 @@ public class BattleField : MonoBehaviour {
 							{"AssignedTeam", "normal_battle_user"},
 							{"Group", "default"},
 							{"LossRatio", 100},
-							{"TeamId", "normal_battle_enemy"},
+							{"TeamId", "normal_battle_enemy"}
+						}
+					},
+					{
+						"normal_user_annihilation", new Dictionary<string, object> {
+							{"Name", "味方の全滅"},
+							{"TypeClass", "LossRatioObjectiveType"},
+							{"Script", "objectives/loss_ratio.lua"},
+							{"AssignedTeam", "normal_battle_enemy"},
+							{"Group", "default"},
+							{"LossRatio", 100},
+							{"TeamId", "normal_battle_user"}
 						}
 					}
 				}
@@ -133,7 +143,10 @@ public class BattleField : MonoBehaviour {
 							{"Name", "攻撃"},
 							{"TypeClass", "AttackSkillType"},
 							{"Script", "skills/attack.lua"},
-							{"Ratio", 1.0f}
+							{"Range", "single"},
+							{"Scope", "hostile"},
+							{"BonusType", "multiply"},
+							{"Bonus", 1.0f}
 						}
 					},
 					{
@@ -141,7 +154,14 @@ public class BattleField : MonoBehaviour {
 							{"Name", "二段切り"},
 							{"TypeClass", "AttackSkillType"},
 							{"Script", "skills/attack.lua"},
-							{"Ratio", 2.0f}
+							{"Range", "single"},
+							{"Scope", "hostile"},
+							{"Prefix", "二段"},
+							{"Postfix", "切り"},
+							{"Group", "multiway"},
+							{"AcceptGroups", new List<string> {"multiway"} },
+							{"BonusType", "multiply"},
+							{"Bonus", 2.0f}
 						}
 					}
 				}
@@ -170,33 +190,85 @@ public class BattleField : MonoBehaviour {
 				"Events", new Dictionary<string, Dictionary<string, object>> {}	
 			},
 			{
+				"Groups", new Dictionary<string, Dictionary<string, object>> {
+					{						
+						"sandbags", new Dictionary<string, object> {
+							{"Script", "arrangements/group_base.lua"},
+							{"Size", 4},
+							{"RandomList", new List<string> {"npc", "npcplus"} },
+							{"FixedList", new List<string> {"npcplus"} }
+						}
+					}
+				}	
+			},
+			{
+				"Arrangements", new Dictionary<string, Dictionary<string, object>> {
+					{
+						"sandbagland", new Dictionary<string, object> {
+							{"Script", "arrangements/arrangement_base.lua"},
+							{ 
+								"TeamMemberLists", new Dictionary<string, List<string>> { 
+									{"normal_battle_enemy", new List<string> {"sandbags"}}
+								}
+							}
+						}
+					}
+				}	
+			},
+			{
 				"Objects", new Dictionary<string, Dictionary<string, object>> {
 					{
 						"user", new Dictionary<string, object> {
 							{"Name", "ユーザー"},
+							{"TypeClass", "GameUserType"},
 							{"Class", "GameUser"},
 							{"Script", "users/game_user.lua"},
-							{"DisplaySide", "user"}
+							{"DisplaySide", "user"},
+							{"WaitSec", 3.0f}
 						}
 					},
 					{
 						"hero", new Dictionary<string, object> {
 							{"Name", "ヒーロー"},
 							{"TypeClass", "HeroObjectType"},
-							{"Class", "Character"},
+							{"Class", "Hero"},
 							{"Script", "objects/hero.lua"},
 							{"DisplaySide", "user"},
-							{"MaxHp", 100}
+							{"MaxHp", 100},
+							{"MaxWp", 10},
+							{"Attack", 100},
+							{"Defense", 80},
+							{"Skills", new List<string> {"attack", "double_attack"}}
 						}					
 					},
 					{
 						"npc", new Dictionary<string, object> {
-							{"Name", "NPC"},
+							{"Name", "サンドバッグ"},
 							{"TypeClass", "NPCObjectType"},
-							{"Class", "Character"},
+							{"Class", "NPCObject"},
 							{"Script", "objects/npc.lua"},
 							{"DisplaySide", "enemy"},
-							{"MaxHp", 150}
+							{"MaxHp", 150},
+							{"MaxWp", 10},
+							{"WaitSec", 5.0f},
+							{"Attack", 100},
+							{"Defense", 80},
+							{"Skills", new List<string> {"attack", "double_attack"}}
+						}
+					},
+					{
+						"npcplus", new Dictionary<string, object> {
+							{"Name", "強いサンドバッグ"},
+							{"TypeClass", "NPCObjectType"},
+							{"Class", "NPCObject"},
+							{"Script", "objects/npc.lua"},
+							{"DisplaySide", "enemy"},
+							{"MaxHp", 1500},
+							{"MaxWp", 100},
+							{"WaitSec", 5.0f},
+							{"Attack", 100},
+							{"Defense", 80},
+							{"Skills", new List<string> {"attack", "double_attack"}}
 						}											
 					}
 				}
