@@ -17,7 +17,7 @@ namespace ScriptEngine {
 			this.Args = args;
 		}
 		public int IntArg(int idx) {
-			return (int)this.Args[idx];
+			return System.Convert.ToInt32(this.Args[idx]);
 		}
 		public string StrArg(int idx) {
 			return (string)this.Args[idx];

@@ -16,6 +16,12 @@ public class GameField {
 	ScriptEngine.FieldBase _field;
 	Actor _actor;		//for remote execution
 	
+	static public float update_latency = 0.0f;
+	
+	static public int NewLocalUserId() {
+		return ObjectBase.NewId();
+	}
+	
 	//ctor/dtor
 	public GameField(bool debug = false) {
 		_debug = debug;
@@ -63,17 +69,23 @@ public class GameField {
 	
 	public void Update(double dt) {
 		var now = Time.time;
-		if ((now - _field.LastUpdate) > 1) {
+		if ((now - _field.LastUpdate) > 0.2) {
 			var ts = Time.realtimeSinceStartup;
-			Call("Update", dt);
+			Call("Update", now - _field.LastUpdate);
 			var et = Time.realtimeSinceStartup;
-			Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
+			update_latency = (et - ts);
+			//Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
 			_field.LastUpdate = now;
 		}			
 	}
 	
 	public void Enter(Renderer r, object user_data = null) {
-		Call("Enter", r.Id, r, user_data);
+		if (_env != null) {
+			Call("Enter", NewLocalUserId(), r, user_data);
+		}
+		else {
+			//TODO : call actor method Enter
+		}
 	}
 	
 	//helper

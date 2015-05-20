@@ -21,12 +21,16 @@ namespace ScriptEngine {
 		public float LastUpdate { get; set; }
 		//this field finished?
 		public bool Finished { get; set; }
+		//id - object mapping
+		public Dictionary<int, ObjectBase> ObjectMap { get; set; }
+
 		
 		//constructor
 		public FieldBase() {
 			this.Teams = new Dictionary<string, TeamBase>();
 			this.Objectives = new List<ObjectiveBase>();
 			this.Events = new List<EventBase>();
+			this.ObjectMap = new Dictionary<int, ObjectBase>();
 			this.Finished = false;
 		}
 		
@@ -42,6 +46,12 @@ namespace ScriptEngine {
 				}
 				this.Cells.Add(rows);
 			}	
+		}
+		
+		//find object from id
+		public ObjectBase FindObject(int id) { 
+			ObjectBase o;
+			return this.ObjectMap.TryGetValue(id, out o) ? o : null;
 		}
 		
 		//get team

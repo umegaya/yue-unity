@@ -22,13 +22,14 @@ namespace ScriptEngine {
 				d[o.Team.Type.Id] = list;
 			}
 			list.Add(o);
-			//Debug.Log("object added to part:" + d.Count + "|" + list.Count + "|" + o.Team.Type.Id + "|" + o);
+			//foreach (var p in d) {
+			//	Debug.Log("list:" + p.Key + "|" + p.Value.Count);
+			//}
 			o.Partition = this;
 		}
 		public void ExitUser(User u) { Exit<User>(this.Users, u); }
 		public void Exit(ObjectBase o) { Exit<ObjectBase>(this.Teams, o); }
 		public bool Exit<T>(Dictionary<string, List<T>> d, T o) where T : ObjectBase {
-			Debug.Log("Exit:" + o);
 			List<T> list;
 			if (d.TryGetValue(o.Team.Type.Id, out list)) {
 				list.Remove(o);
@@ -43,13 +44,10 @@ namespace ScriptEngine {
 		public CellTypeBase Type { get; set; }
 		public Partition EnemySide { get; set; }
 		public List<Partition> UserSide { get; set; }
-		public Dictionary<int, ObjectBase> ObjectMap { get; set; }
-		public ObjectBase FindObject(int id) { return this.ObjectMap[id]; }
 		public CellBase() {
 			this.EnemySide = new Partition();
 			this.UserSide = new List<Partition>();
 			this.UserSide.Add(new Partition());
-			this.ObjectMap = new Dictionary<int, ObjectBase>();
 		}
 	}
 	public class CellFactory : Util.Factory<CellTypeBase, CellBase> {}

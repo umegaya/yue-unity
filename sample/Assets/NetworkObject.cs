@@ -23,7 +23,7 @@ public class NetworkObject : MonoBehaviour {
 	
 	void OnGUI () {
         // Make a background box
-        GUI.Box(new Rect(10,10,200,90), "Menu");
+        GUI.Box(new Rect(10,10,200,110), "Menu");
     
         // Make the first button. If it is pressed, Application.Loadlevel (1) will be executed
         if(GUI.Button(new Rect(20,40,180,20), "Close Connection")) {
@@ -40,8 +40,8 @@ public class NetworkObject : MonoBehaviour {
 			}, "close_me");
 		}
     
-        // Make the second button.
         GUI.Label(new Rect(20,70,180,20), "Latency:" + System.Math.Ceiling(1000 * _latency) + "ms");
+        GUI.Label(new Rect(20,90,180,20), "ScpLatency:" + (System.Math.Ceiling(100000 * GameField.update_latency) / 100) + "ms");
     }
 
 

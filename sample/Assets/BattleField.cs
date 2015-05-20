@@ -42,7 +42,7 @@ public class BattleField : MonoBehaviour {
 			},
 			{
 				"Objectives", new List<string> {
-					"normal_enemy_annihilation",
+					"normal_enemy_annihilation", "normal_user_annihilation"
 				}
 			},
 			{

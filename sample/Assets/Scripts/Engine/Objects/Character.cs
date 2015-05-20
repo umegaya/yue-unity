@@ -32,5 +32,10 @@ namespace ScriptEngine {
 			this.ComboChain = new List<ActionResult>();
 			this.LastUpdateQueue = 0;
 		}
+		
+		//method
+		public ActionResult LastComboAction() {
+			return this.ComboChain[this.ComboChain.Count - 1];
+		}
 	}
 }
