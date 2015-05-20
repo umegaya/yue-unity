@@ -18,7 +18,7 @@ namespace ScriptEngine {
 		public int Duration { get; set; }
 		public SkillBase() {}
 		public object Clone() {
-			return this.Clone();
+			return this.MemberwiseClone();
 		}
 	}
 	public class SkillFactory : Util.Factory<SkillTypeBase, SkillBase> {}

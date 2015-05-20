@@ -161,7 +161,8 @@ public class BattleField : MonoBehaviour {
 							{"Group", "multiway"},
 							{"AcceptGroups", new List<string> {"multiway"} },
 							{"BonusType", "multiply"},
-							{"Bonus", 2.0f}
+							{"Bonus", 2.0f},
+							{"Wp", 1}
 						}
 					}
 				}

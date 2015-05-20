@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using ScriptEngine;
 
 namespace ScriptEngine {
-	public class ActionResult {
+	public class ActionResult : System.ICloneable {
 		public int Type { get; set; }
 		public string Name { get; set; }
 		public object[] Args { get; set; }
@@ -16,6 +16,9 @@ namespace ScriptEngine {
 			this.Name = name;
 			this.Args = args;
 		}
+		public object Clone() {
+			return this.MemberwiseClone();
+		}
 		public int IntArg(int idx) {
 			return System.Convert.ToInt32(this.Args[idx]);
 		}
@@ -26,6 +29,7 @@ namespace ScriptEngine {
 			return (SkillBase)this.Args[idx];
 		}
 		public ObjectBase ObjectArg(int idx) {
+			Debug.Log("objtye:" + this.Args[idx]);
 			return (ObjectBase)this.Args[idx];			
 		}
 	}
