@@ -64,12 +64,13 @@ public class GameField {
 	}
 	
 	//method
-	public void SendCommand(object command) {
+	public object[] SendCommand(object command) {
 		if (_env != null) {
-			Call("SendCommand", System.Convert.ToInt32(_user_id), command);
+			return Call("SendCommand", System.Convert.ToInt32(_user_id), command);
 		}
 		else {
 			// TODO : call actor
+			return new object[] {};
 		}
 	}
 	
@@ -113,6 +114,9 @@ public class GameField {
 		} catch(NLua.Exceptions.LuaException e) {
 			Debug.LogError(e);
 			throw e;
+		}
+		if (function != "Update" && result != null) {
+			Debug.Log("result:" + function + "|" + result[0]);
 		}
 		return result;		
 	}

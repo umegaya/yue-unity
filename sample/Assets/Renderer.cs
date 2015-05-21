@@ -19,6 +19,7 @@ public class Renderer : MonoBehaviour {
 	public Dictionary<double, double> SkillSelection { get; set; }
 	public Dictionary<object, object> SceneData { get; set; }
 	public string Winner { get; set; }
+	public double Cooldown { get; set; }
 	public Dictionary<object, object> Enemy() {
 		return (Dictionary<object, object>)(
 			(Dictionary<object, object>) (
@@ -118,6 +119,9 @@ public class Renderer : MonoBehaviour {
 		}
 		else {
 			text = text + "ongoing";
+			if (this.Cooldown <= 0.0) {
+				text = text + " command ready";
+			}
 		}
 		return text;
 	}
@@ -158,6 +162,13 @@ public class Renderer : MonoBehaviour {
 	void Start () {
 	}
 	
+	void Update() {
+		this.Cooldown -= Time.deltaTime;
+		if (this.Cooldown < 0.0) {
+			this.Cooldown = 0.0;
+		}
+	}
+	
 	const int BOX_WIDTH = 460;
 	const int BOX_HEIGHT = 540;
 	const int BOX_X = 10;
@@ -174,7 +185,8 @@ public class Renderer : MonoBehaviour {
 		int cnt = 0;
 		foreach (var e in Enemy()) {
 			if (GUI.Button(new Rect(BUTTON_X, BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), EnemyText(e.Value))) {
-				BattleField.instance.SendCommand(BuildBattleCommand(e.Value));
+				var rvs = BattleField.instance.SendCommand(BuildBattleCommand(e.Value));
+				this.Cooldown = (double)rvs[0];
 				ShuffleSkillSelection();
 			}
 			cnt++;
@@ -199,6 +211,7 @@ public class Renderer : MonoBehaviour {
 		if (type == "init") {
 			this.SceneData = dict;
 			ShuffleSkillSelection();
+			this.Cooldown = 0;
 		}
 		else if (type == "status_change") {
 			this.SetStateData(dict);
@@ -211,6 +224,9 @@ public class Renderer : MonoBehaviour {
 		}
 		else if (type == "end") {
 			this.Winner = (string)dict["Winner"];
+		}
+		else if (type == "error") {
+			Debug.LogError(Json.Serialize(dict));
 		}
 	}
 }

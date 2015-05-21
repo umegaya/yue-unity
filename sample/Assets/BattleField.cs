@@ -37,8 +37,8 @@ public class BattleField : MonoBehaviour {
 		}
 	}
 	
-	public void SendCommand(object command) {
-		gf.SendCommand(command);
+	public object[] SendCommand(object command) {
+		return gf.SendCommand(command);
 	}
 
 	void Update () {
