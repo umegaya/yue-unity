@@ -13,6 +13,7 @@ public class GameField {
 	//variables
 	bool _debug = false;
 	Lua _env = null;		//for local execution
+	string _user_id = null;
 	ScriptEngine.FieldBase _field;
 	Actor _actor;		//for remote execution
 	
@@ -49,7 +50,7 @@ public class GameField {
 	}
 
 	//initialization
-	public void InitLocal(object field_data, object event_player) {
+	public void InitLocal(object field_data) {
 		CleanUp();
 		_env = NewVM(_debug);
 		_field = new ScriptEngine.FieldBase();
@@ -57,14 +58,19 @@ public class GameField {
 		ScriptLoader.Load(_env, "startup.lua");
 		Call("Initialize", _field, field_data);
 	}
-	public void InitRemote(string url, object event_player) {
+	public void InitRemote(string url) {
 		CleanUp();
 		_actor = NetworkManager.instance.NewActor(url);
 	}
 	
 	//method
 	public void SendCommand(object command) {
-		Call("SendCommand", command);
+		if (_env != null) {
+			Call("SendCommand", System.Convert.ToInt32(_user_id), command);
+		}
+		else {
+			// TODO : call actor
+		}
 	}
 	
 	public void Update(double dt) {
@@ -79,12 +85,14 @@ public class GameField {
 		}			
 	}
 	
-	public void Enter(Renderer r, object user_data = null) {
+	public void Enter(object r, object user_data = null) {
 		if (_env != null) {
-			Call("Enter", NewLocalUserId(), r, user_data);
+			int id = NewLocalUserId();
+			Call("Enter", id, r, user_data);
+			_user_id = id.ToString();
 		}
 		else {
-			//TODO : call actor method Enter
+			//TODO : register renderer to networkmanager / call actor method Enter
 		}
 	}
 	

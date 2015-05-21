@@ -3,6 +3,18 @@ using System.Collections.Generic;
 
 public class BattleField : MonoBehaviour {
 
+	//singleton
+	private static BattleField _instance;
+ 	public static BattleField instance
+    {
+        get
+        {
+            if(_instance == null)
+                _instance = GameObject.FindObjectOfType<BattleField>();
+            return _instance;
+        }
+    }
+
 	GameField gf;
 	
 	public bool local = true;
@@ -15,14 +27,18 @@ public class BattleField : MonoBehaviour {
 		if (local) {
 			var user_data = TestUserData();
 			var field_data = TestFieldData();
-			gf.InitLocal(field_data, GetComponent<UnityEngine.Renderer>());
+			gf.InitLocal(field_data);
 			gf.Enter(Renderer.instance, user_data);
 		}
 		else {
 			//TODO : initialize remote game field
-			gf.InitRemote(url, Renderer.instance);
+			gf.InitRemote(url);
 			gf.Enter(Renderer.instance);
 		}
+	}
+	
+	public void SendCommand(object command) {
+		gf.SendCommand(command);
 	}
 
 	void Update () {

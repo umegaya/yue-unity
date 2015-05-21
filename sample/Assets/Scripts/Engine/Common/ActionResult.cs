@@ -29,7 +29,6 @@ namespace ScriptEngine {
 			return (SkillBase)this.Args[idx];
 		}
 		public ObjectBase ObjectArg(int idx) {
-			Debug.Log("objtye:" + this.Args[idx]);
 			return (ObjectBase)this.Args[idx];			
 		}
 	}
