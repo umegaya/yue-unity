@@ -179,14 +179,18 @@ public class Renderer : MonoBehaviour {
 	const int BUTTON_WIDTH = BOX_WIDTH - 2 * MERGIN;
 	const int BUTTON_HEIGHT = 50;
 	void OnGUI () {
+		if (this.SceneData == null) {
+			return;
+		}
         // Make a background box
         GUI.Box(new Rect(BOX_X,BOX_Y,BOX_WIDTH,BOX_HEIGHT), BattleFieldText());
     
 		int cnt = 0;
 		foreach (var e in Enemy()) {
 			if (GUI.Button(new Rect(BUTTON_X, BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), EnemyText(e.Value))) {
-				var rvs = BattleField.instance.SendCommand(BuildBattleCommand(e.Value));
-				this.Cooldown = (double)rvs[0];
+				BattleField.instance.SendCommand(delegate (object []rvs, object err) {
+					this.Cooldown = (double)rvs[0];
+				}, BuildBattleCommand(e.Value));
 				ShuffleSkillSelection();
 			}
 			cnt++;
@@ -206,8 +210,9 @@ public class Renderer : MonoBehaviour {
 	//LuaTable almost acts like Dictionary. 
 	//you can get property by data[hoge], and iterate it by foreach (KeyValuePair<object, object> e in data) {}. 
 	public void Play(string type, LuaTable data) {
+		//*
 		var dict = GameField.ToDictionary(data);
-		Debug.Log("Play:"+type+"|"+Json.Serialize(dict));
+		//Debug.Log("Play:"+type+"|"+Json.Serialize(dict));
 		if (type == "init") {
 			this.SceneData = dict;
 			ShuffleSkillSelection();
@@ -228,5 +233,6 @@ public class Renderer : MonoBehaviour {
 		else if (type == "error") {
 			Debug.LogError(Json.Serialize(dict));
 		}
+		//*/
 	}
 }

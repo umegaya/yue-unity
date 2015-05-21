@@ -31,6 +31,9 @@ namespace ScriptEngine {
 		public ObjectBase ObjectArg(int idx) {
 			return (ObjectBase)this.Args[idx];			
 		}
+		public void SetArg(int idx, object o) {
+			this.Args[idx] = o;
+		}
 	}
 	public class ActionResultFactory {
 		static public ActionResult Create(int type, string name, params object[] args) {

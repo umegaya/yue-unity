@@ -37,5 +37,8 @@ namespace ScriptEngine {
 		public ActionResult LastComboAction() {
 			return this.ComboChain[this.ComboChain.Count - 1];
 		}
+		public SkillBase GetRandomSkill() {
+			return this.Skills.GetRandom();
+		}
 	}
 }

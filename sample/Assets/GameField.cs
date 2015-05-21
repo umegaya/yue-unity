@@ -16,11 +16,21 @@ public class GameField {
 	string _user_id = null;
 	ScriptEngine.FieldBase _field;
 	Actor _actor;		//for remote execution
-	
+
+	//static variables	
 	static public float update_latency = 0.0f;
-	
+
+	//static function
 	static public int NewLocalUserId() {
 		return ObjectBase.NewId();
+	}
+	
+	//delegate
+	public delegate void ScriptResultDelegate(object[] result, object e);
+	void DefaultScriptResultDelegate(object[] result, object e) {
+		if (e != null) {
+			throw (System.Exception)e;
+		}
 	}
 	
 	//ctor/dtor
@@ -56,7 +66,7 @@ public class GameField {
 		_field = new ScriptEngine.FieldBase();
 		
 		ScriptLoader.Load(_env, "startup.lua");
-		Call("Initialize", _field, field_data);
+		Call("Initialize", null, _field, field_data);
 	}
 	public void InitRemote(string url) {
 		CleanUp();
@@ -64,13 +74,12 @@ public class GameField {
 	}
 	
 	//method
-	public object[] SendCommand(object command) {
+	public void SendCommand(ScriptResultDelegate d, object command) {
 		if (_env != null) {
-			return Call("SendCommand", System.Convert.ToInt32(_user_id), command);
+			Call("SendCommand", d, System.Convert.ToInt32(_user_id), command);
 		}
 		else {
 			// TODO : call actor
-			return new object[] {};
 		}
 	}
 	
@@ -78,7 +87,7 @@ public class GameField {
 		var now = Time.time;
 		if ((now - _field.LastUpdate) > 0.2) {
 			var ts = Time.realtimeSinceStartup;
-			Call("Update", now - _field.LastUpdate);
+			Call("Update", null, now - _field.LastUpdate);
 			var et = Time.realtimeSinceStartup;
 			update_latency = (et - ts);
 			//Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
@@ -89,7 +98,7 @@ public class GameField {
 	public void Enter(object r, object user_data = null) {
 		if (_env != null) {
 			int id = NewLocalUserId();
-			Call("Enter", id, r, user_data);
+			Call("Enter", null, id, r, user_data);
 			_user_id = id.ToString();
 		}
 		else {
@@ -98,11 +107,20 @@ public class GameField {
 	}
 	
 	//helper
-	object[] Call(string function, params object[] args) {
+	void Call(string function, ScriptResultDelegate d, params object[] args) {
+		if (d == null) {
+			d = DefaultScriptResultDelegate;
+		}
 		object[] result = new object[0];
-		if(_env == null) return result;
+		if(_env == null) {
+			d(null, new System.Exception("script VM not initialized"));
+			return;
+		}
 		LuaFunction lf = _env.GetFunction(function);
-		if(lf == null) return result;
+		if(lf == null) {
+			d(null, new System.Exception("function not found:"+function));
+			return;
+		}
 		try {
 			// Note: calling a function that does not 
 			// exist does not throw an exception.
@@ -112,13 +130,9 @@ public class GameField {
 				result = lf.Call();
 			}
 		} catch(NLua.Exceptions.LuaException e) {
-			Debug.LogError(e);
-			throw e;
+			d(null, e);
 		}
-		if (function != "Update" && result != null) {
-			Debug.Log("result:" + function + "|" + result[0]);
-		}
-		return result;		
+		d(result, null);
 	}
 	
 	//its just for debugging purpose (for dumping as JSON string). 

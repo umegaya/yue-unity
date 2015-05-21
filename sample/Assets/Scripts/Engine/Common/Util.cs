@@ -5,6 +5,15 @@ using NLua;
 using ScriptEngine;
 
 namespace ScriptEngine {
+	static public class Patch {
+		public static T Last<T>(this List<T> list) {
+			return list[list.Count - 1];
+		}
+		static System.Random _prng = new System.Random();
+		public static T GetRandom<T>(this List<T> list) {
+			return list[_prng.Next(0, list.Count)];
+		}
+	}
 	public class ObjectWrapper {
 		static LuaFunction wrapper;
 		static public object Wrap(object o, string src = null) {
