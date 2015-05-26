@@ -17,16 +17,11 @@ public class GameField {
 	bool _debug = false;
 	Lua _env = null;		//for local execution
 	string _user_id = null;
-	ScriptEngine.FieldBase _field;
+	float _last_update = 0.0f;
 	Actor _actor;		//for remote execution
 
 	//static variables	
 	static public float update_latency = 0.0f;
-
-	//static function
-	static public int NewLocalUserId() {
-		return ObjectBase.NewId();
-	}
 	
 	//delegate
 	public delegate void ScriptResultDelegate(object[] result, object e);
@@ -49,7 +44,6 @@ public class GameField {
 			_actor.Destroy();
 			_actor = null;
 		}
-		_field = null;
 	}
 	
 	public Lua NewVM(bool debug) {
@@ -65,12 +59,10 @@ public class GameField {
 	//initialization
 	public void InitLocal(object field_data) {
 		CleanUp();
-		_env = NewVM(_debug);
-		_field = new ScriptEngine.FieldBase();
-		
+		_env = NewVM(_debug);		
 		ScriptLoader.Load(_env, "startup.lua");
 		Call("InitFixData", null, _game_fix_data);
-		Call("Initialize", null, _field, Json.Serialize(field_data));
+		Call("Initialize", null, Json.Serialize(field_data));
 	}
 	public void InitRemote(string url) {
 		CleanUp();
@@ -89,13 +81,13 @@ public class GameField {
 	
 	public void Update(double dt) {
 		var now = Time.time;
-		if ((now - _field.LastUpdate) > 0.2) {
+		if ((now - _last_update) > 0.1) {
 			var ts = Time.realtimeSinceStartup;
-			Call("Update", null, now - _field.LastUpdate);
+			Call("Update", null, now - _last_update);
 			var et = Time.realtimeSinceStartup;
 			update_latency = (et - ts);
 			//Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
-			_field.LastUpdate = now;
+			_last_update = now;
 		}			
 	}
 	
