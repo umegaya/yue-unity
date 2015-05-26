@@ -28,12 +28,14 @@ public class BattleField : MonoBehaviour {
 			var user_data = TestUserData();
 			var field_data = TestFieldData();
 			gf.InitLocal(field_data);
-			gf.Enter(Renderer.instance, user_data);
+			gf.Enter("dummyotp", Renderer.instance, user_data);
 		}
 		else {
 			//TODO : initialize remote game field
 			gf.InitRemote(url);
-			gf.Enter(Renderer.instance);
+			//TODO : request web server to get otp and send it
+			var otp = "hoge";
+			gf.Enter(otp, Renderer.instance);
 		}
 	}
 	
@@ -48,6 +50,7 @@ public class BattleField : MonoBehaviour {
 	// test fixture
 	Dictionary<string, object> TestFieldData() {
 		return new Dictionary<string, object>() { 
+			{ "SizeX", 1 }, { "SizeY", 1 },
 			{
 				"Cells", new List<List<string>> {
 					new List<string> { "green_cell" }
@@ -105,10 +108,10 @@ public class BattleField : MonoBehaviour {
 			}
 		};	
 	}
-	void InitFixData() {
-		var test_data = new Dictionary<string, Dictionary<string, Dictionary<string, object>>> {
+	Dictionary<string, Dictionary<string, Dictionary<string, object>>> TestFixData() {
+		return new Dictionary<string, Dictionary<string, Dictionary<string, object>>> {
 			{
-				"CellTypes", new Dictionary<string, Dictionary<string, object>> {
+				"Cells", new Dictionary<string, Dictionary<string, object>> {
 					{
 						"green_cell", new Dictionary<string, object> {
 							{"Name", "草原"},
@@ -291,6 +294,8 @@ public class BattleField : MonoBehaviour {
 				}
 			},
 		};
-		GameField.Initialize(test_data);
+	}
+	void InitFixData() {
+		GameField.Initialize(TestFixData());
 	}
 }

@@ -7,7 +7,7 @@ namespace ScriptEngine {
 	//have reponsibity for starting up script engine
 	class ScriptStarter {
 		static public void InitFixData(Dictionary<string, Dictionary<string, Dictionary<string, object>>> datas) {
-			CellFactory.Initialize(datas["CellTypes"]);
+			CellFactory.Initialize(datas["Cells"]);
 			EventFactory.Initialize(datas["Events"]);
 			ObjectiveFactory.Initialize(datas["Objectives"]);
 			SkillFactory.Initialize(datas["Skills"]);

@@ -1,12 +1,15 @@
 using UnityEngine;
 using System.Collections.Generic;
 using ScriptEngine;
+using MiniJSON;
 using NLua;
 using Yue;
 
 public class GameField {
 	//initialize static data
+	static object _game_fix_data = null;
 	static public void Initialize(Dictionary<string, Dictionary<string, Dictionary<string, object>>> datas) {
+		_game_fix_data = Json.Serialize(datas);
 		ScriptStarter.InitFixData(datas);
 	}
 	
@@ -66,7 +69,8 @@ public class GameField {
 		_field = new ScriptEngine.FieldBase();
 		
 		ScriptLoader.Load(_env, "startup.lua");
-		Call("Initialize", null, _field, field_data);
+		Call("InitFixData", null, _game_fix_data);
+		Call("Initialize", null, _field, Json.Serialize(field_data));
 	}
 	public void InitRemote(string url) {
 		CleanUp();
@@ -76,7 +80,7 @@ public class GameField {
 	//method
 	public void SendCommand(ScriptResultDelegate d, object command) {
 		if (_env != null) {
-			Call("SendCommand", d, System.Convert.ToInt32(_user_id), command);
+			Call("SendCommand", d, System.Convert.ToInt32(_user_id), Json.Serialize(command));
 		}
 		else {
 			// TODO : call actor
@@ -95,11 +99,13 @@ public class GameField {
 		}			
 	}
 	
-	public void Enter(object r, object user_data = null) {
+	public void Enter(object otp, object r, object user_data = null) {
 		if (_env != null) {
-			int id = NewLocalUserId();
-			Call("Enter", null, id, r, user_data);
-			_user_id = id.ToString();
+			Call("Enter", delegate (object []rvs, object err) {
+				if (rvs != null) {
+					this._user_id = ((double)rvs[0]).ToString();
+				}
+			}, otp, r, Json.Serialize(user_data));
 		}
 		else {
 			//TODO : register renderer to networkmanager / call actor method Enter
