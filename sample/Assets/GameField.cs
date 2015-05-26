@@ -1,12 +1,15 @@
 using UnityEngine;
 using System.Collections.Generic;
 using ScriptEngine;
+using MiniJSON;
 using NLua;
 using Yue;
 
 public class GameField {
 	//initialize static data
+	static object _game_fix_data = null;
 	static public void Initialize(Dictionary<string, Dictionary<string, Dictionary<string, object>>> datas) {
+		_game_fix_data = Json.Serialize(datas);
 		ScriptStarter.InitFixData(datas);
 	}
 	
@@ -14,16 +17,11 @@ public class GameField {
 	bool _debug = false;
 	Lua _env = null;		//for local execution
 	string _user_id = null;
-	ScriptEngine.FieldBase _field;
+	float _last_update = 0.0f;
 	Actor _actor;		//for remote execution
 
 	//static variables	
 	static public float update_latency = 0.0f;
-
-	//static function
-	static public int NewLocalUserId() {
-		return ObjectBase.NewId();
-	}
 	
 	//delegate
 	public delegate void ScriptResultDelegate(object[] result, object e);
@@ -46,7 +44,6 @@ public class GameField {
 			_actor.Destroy();
 			_actor = null;
 		}
-		_field = null;
 	}
 	
 	public Lua NewVM(bool debug) {
@@ -62,11 +59,10 @@ public class GameField {
 	//initialization
 	public void InitLocal(object field_data) {
 		CleanUp();
-		_env = NewVM(_debug);
-		_field = new ScriptEngine.FieldBase();
-		
+		_env = NewVM(_debug);		
 		ScriptLoader.Load(_env, "startup.lua");
-		Call("Initialize", null, _field, field_data);
+		Call("InitFixData", null, _game_fix_data);
+		Call("Initialize", null, Json.Serialize(field_data));
 	}
 	public void InitRemote(string url) {
 		CleanUp();
@@ -76,7 +72,7 @@ public class GameField {
 	//method
 	public void SendCommand(ScriptResultDelegate d, object command) {
 		if (_env != null) {
-			Call("SendCommand", d, System.Convert.ToInt32(_user_id), command);
+			Call("SendCommand", d, System.Convert.ToInt32(_user_id), Json.Serialize(command));
 		}
 		else {
 			// TODO : call actor
@@ -85,21 +81,23 @@ public class GameField {
 	
 	public void Update(double dt) {
 		var now = Time.time;
-		if ((now - _field.LastUpdate) > 0.2) {
+		if ((now - _last_update) > 0.1) {
 			var ts = Time.realtimeSinceStartup;
-			Call("Update", null, now - _field.LastUpdate);
+			Call("Update", null, now - _last_update);
 			var et = Time.realtimeSinceStartup;
 			update_latency = (et - ts);
 			//Debug.Log("Update takes:"+ (et - ts) + "|" + ts + "|" + et);
-			_field.LastUpdate = now;
+			_last_update = now;
 		}			
 	}
 	
-	public void Enter(object r, object user_data = null) {
+	public void Enter(object otp, object r, object user_data = null) {
 		if (_env != null) {
-			int id = NewLocalUserId();
-			Call("Enter", null, id, r, user_data);
-			_user_id = id.ToString();
+			Call("Enter", delegate (object []rvs, object err) {
+				if (rvs != null) {
+					this._user_id = ((double)rvs[0]).ToString();
+				}
+			}, otp, r, Json.Serialize(user_data));
 		}
 		else {
 			//TODO : register renderer to networkmanager / call actor method Enter

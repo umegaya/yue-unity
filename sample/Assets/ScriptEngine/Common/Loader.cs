@@ -4,7 +4,7 @@ using NLua;
 
 namespace ScriptEngine {
 	class ScriptLoader {
-		static public string SearchPath = Application.dataPath+"/Scripts/src/";
+		static public string SearchPath = Application.streamingAssetsPath+"/LuaRoot/";
 		static public void Load(Lua env, string file) {
 			string code;
 #if UNITY_EDITOR

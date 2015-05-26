@@ -189,7 +189,9 @@ public class Renderer : MonoBehaviour {
 		foreach (var e in Enemy()) {
 			if (GUI.Button(new Rect(BUTTON_X, BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), EnemyText(e.Value))) {
 				BattleField.instance.SendCommand(delegate (object []rvs, object err) {
-					this.Cooldown = (double)rvs[0];
+					if (rvs != null) {
+						this.Cooldown = (double)rvs[0];
+					}
 				}, BuildBattleCommand(e.Value));
 				ShuffleSkillSelection();
 			}

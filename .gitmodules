@@ -2,5 +2,5 @@
 	path = lib/Serde/msgpack
 	url = git@github.com:umegaya/msgpack-unity.git
 [submodule "sample/Assets/Scripts/src"]
-	path = sample/Assets/Scripts/src
+	path = sample/Assets/StreamingAssets/LuaRoot
 	url = git@github.com:umegaya/yue-unity-script.git
