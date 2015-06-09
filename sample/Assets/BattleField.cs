@@ -18,9 +18,14 @@ public class BattleField : MonoBehaviour {
 	GameField gf;
 	
 	public bool local = true;
+	public bool create_field = false;
 	public bool debug = false;
 	public string url = "";
-	
+	public string login_url = "";
+	public string user_id = "";
+	public string field_id = "";
+
+	//TODO : refactor flow of starting remote/local battle session. too messy now.	
 	void Start () {
 		InitFixData();
 		gf = new GameField(this.debug);
@@ -28,14 +33,15 @@ public class BattleField : MonoBehaviour {
 			var user_data = TestUserData();
 			var field_data = TestFieldData();
 			gf.InitLocal(field_data);
-			gf.Enter("dummyotp", Renderer.instance, user_data);
+			gf.Enter(Renderer.instance, user_data);
+		}
+		else if (create_field) {
+			gf.InitRemote_Debug(url, login_url, TestFieldData());
+			gf.Enter(Renderer.instance, TestUserData());
 		}
 		else {
-			//TODO : initialize remote game field
-			gf.InitRemote(url);
-			//TODO : request web server to get otp and send it
-			var otp = "hoge";
-			gf.Enter(otp, Renderer.instance);
+			gf.InitRemote(url, login_url, user_id, field_id);
+			gf.Enter(Renderer.instance, null);
 		}
 	}
 	

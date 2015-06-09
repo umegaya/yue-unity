@@ -26,10 +26,13 @@ public class NetworkManager : MonoBehaviour {
 	}
 
 	public Actor NewActor(string url, Yue.ConnectionStateDelegate d = null) {
+		if (url.StartsWith("http")) {
+			return new WebActor(url);
+		}
 		return new Actor(url, d);
 	}
 
-	public void Register(string name, MonoBehaviour g) {
+	public void Register(string name, object g) {
 		TransportManager.Register(name, g);
 	}
 }

@@ -16,34 +16,26 @@ public class Renderer : MonoBehaviour {
         }
     }
 	System.Random _prng = new System.Random();
-	public Dictionary<double, double> SkillSelection { get; set; }
+	public Dictionary<double, int> SkillSelection { get; set; }
 	public Dictionary<object, object> SceneData { get; set; }
 	public string Winner { get; set; }
 	public double Cooldown { get; set; }
-	public Dictionary<object, object> Enemy() {
-		return (Dictionary<object, object>)(
-			(Dictionary<object, object>) (
-				((Dictionary<object, object>)this.SceneData["EnemySide"])["normal_battle_enemy"]
-			)
-		);
+	public object[] Enemy() {
+		return ((object[])((Dictionary<object, object>)this.SceneData["EnemySide"])["normal_battle_enemy"]);
 	}
-	public Dictionary<object, object> Hero() {
-		return (Dictionary<object, object>)(
-			(Dictionary<object, object>) (
-				((Dictionary<object, object>)this.SceneData["UserSide"])["normal_battle_user"]
-			)
-		);
+	public object[] Hero() {
+		return ((object[])((Dictionary<object, object>)this.SceneData["UserSide"])["normal_battle_user"]);
 	}
 	public Dictionary<object, object> FindObjectById(object idobj) {
 		double id = (double)idobj;
 		foreach (var e in Enemy()) {
-			var d = (Dictionary<object, object>)(e.Value);
+			var d = (Dictionary<object, object>)e;
 			if (((double)d["TargetId"]) == id) {
 				return d;
 			}
 		}
 		foreach (var e in Hero()) {
-			var d = (Dictionary<object, object>)(e.Value);
+			var d = (Dictionary<object, object>)e;
 			if (((double)d["TargetId"]) == id) {
 				return d;
 			}
@@ -103,12 +95,18 @@ public class Renderer : MonoBehaviour {
 	public string HeroText(object e) {
 		var text = EnemyText(e);
 		var d = (Dictionary<object, object>)e;
-		object b; double idx;
+		object b; int idx;
 		if (d.TryGetValue("IsDead", out b)) {
 		}
 		else if (this.SkillSelection.TryGetValue((double)d["TargetId"], out idx)) {
-			var skill = (Dictionary<object, object>)(((Dictionary<object, object>)d["Skills"])[idx]);
+			var skill = (Dictionary<object, object>)(((object[])d["Skills"])[idx]);
 			text = text + string.Format(": skill={0}", skill["Name"]);
+		}
+		else {
+			Debug.Log("skill selection not found:" + d["TargetId"]);
+			foreach (var ee in this.SkillSelection) {
+				Debug.Log("selection state:" + ee.Key + "|" + ee.Key.GetType() + "|" + ee.Value);
+			}
 		}
 		return text;
 	}
@@ -127,19 +125,19 @@ public class Renderer : MonoBehaviour {
 	}
 	public void ShuffleSkillSelection() {
 		if (this.SkillSelection == null) {
-			this.SkillSelection = new Dictionary<double, double>();
+			this.SkillSelection = new Dictionary<double, int>();
 		}
 		this.SkillSelection.Clear();
 		foreach (var e in Hero()) {
-			var d = (Dictionary<object, object>)e.Value;
-			var skills = (Dictionary<object, object>)d["Skills"];
-			var idx = _prng.Next(1, skills.Count + 1);
+			var d = (Dictionary<object, object>)e;
+			var skills = (object[])d["Skills"];
+			var idx = _prng.Next(0, skills.Length);
 			this.SkillSelection.Add((double)d["TargetId"], idx);
 		}
 	}
-	public string GetSkillIdByTargetAndIndex(double target_id, double index) {
+	public string GetSkillIdByTargetAndIndex(double target_id, int index) {
 		var d = FindObjectById(target_id);
-		var skills = (Dictionary<object, object>)d["Skills"];
+		var skills = (object[])d["Skills"];
 		var skill = (Dictionary<object, object>)skills[index];
 		return (string)skill["Id"];
 	}
@@ -187,19 +185,22 @@ public class Renderer : MonoBehaviour {
     
 		int cnt = 0;
 		foreach (var e in Enemy()) {
-			if (GUI.Button(new Rect(BUTTON_X, BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), EnemyText(e.Value))) {
+			if (GUI.Button(new Rect(BUTTON_X, BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), EnemyText(e))) {
 				BattleField.instance.SendCommand(delegate (object []rvs, object err) {
 					if (rvs != null) {
 						this.Cooldown = (double)rvs[0];
 					}
-				}, BuildBattleCommand(e.Value));
+					else {
+						Debug.Log("cmderr:" + err);
+					}
+				}, BuildBattleCommand(e));
 				ShuffleSkillSelection();
 			}
 			cnt++;
 		}
 
 		foreach (var e in Hero()) {
-			GUI.Label(new Rect(BUTTON_X, 10 + BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), HeroText(e.Value));
+			GUI.Label(new Rect(BUTTON_X, 10 + BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), HeroText(e));
 			cnt++;			
 		}
 		
@@ -211,9 +212,16 @@ public class Renderer : MonoBehaviour {
 	//battle event receiver.
 	//LuaTable almost acts like Dictionary. 
 	//you can get property by data[hoge], and iterate it by foreach (KeyValuePair<object, object> e in data) {}. 
-	public void Play(string type, LuaTable data) {
-		//*
+	public void PlayLocal(string type, LuaTable data) {
+		try {
 		var dict = GameField.ToDictionary(data);
+		Play(type, dict);
+		}
+		catch (System.Exception e) {
+			Debug.Log("PlayLocal error:" + e);
+		}
+	}
+	public void Play(string type, Dictionary<object, object> dict) {
 		//Debug.Log("Play:"+type+"|"+Json.Serialize(dict));
 		if (type == "init") {
 			this.SceneData = dict;
