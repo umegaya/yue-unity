@@ -21,8 +21,8 @@ public class GameField {
 	static string _game_fix_data = null;
 	
 	//instance variables common
-	string _user_id = null;
 	bool _debug = false;
+	string _user_id = null;
 	//instance variables for local mode
 	Lua _env = null;			//for local execution
 	float _last_update = 0.0f;	//last time when script Update called
@@ -47,7 +47,6 @@ public class GameField {
 	//static method
 	static public void Initialize(Dictionary<string, Dictionary<string, Dictionary<string, object>>> datas) {
 		_game_fix_data = Json.Serialize(datas);
-		ScriptStarter.InitFixData(datas);
 	}
 	static public Lua NewVM(bool debug) {
 		var env = new Lua();

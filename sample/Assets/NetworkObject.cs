@@ -56,6 +56,7 @@ public class NetworkObject : MonoBehaviour {
 		}
 	}
 	
+	//connection watcher which do something when connection established/closed
 	public void ConnectionWatcher(string url, bool opened) {
 		if (opened) {
 			Debug.Log("connection open:" + url);

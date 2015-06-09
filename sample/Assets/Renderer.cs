@@ -167,6 +167,7 @@ public class Renderer : MonoBehaviour {
 		}
 	}
 	
+	//display UI
 	const int BOX_WIDTH = 460;
 	const int BOX_HEIGHT = 540;
 	const int BOX_X = 10;
