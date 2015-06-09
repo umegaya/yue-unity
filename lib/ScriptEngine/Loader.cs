@@ -1,8 +1,7 @@
 using UnityEngine;
-using ScriptEngine;
 using NLua;
 
-namespace ScriptEngine {
+namespace Yue {
 	class ScriptLoader {
 		static public string SearchPath = Application.streamingAssetsPath+"/LuaRoot/";
 		static public void Load(Lua env, string file) {

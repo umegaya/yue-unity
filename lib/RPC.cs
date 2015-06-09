@@ -101,7 +101,7 @@ namespace Yue
 				return (string)Data[MethodIndex];
 			}
 		}
-		public ServerException Error(Serde sr) {
+		public virtual ServerException Error(Serde sr) {
 			if (Success) {
 				return null;
 			}
@@ -179,15 +179,13 @@ namespace Yue
 				return (uint)(System.Int64)Data[0];
 			}
 		}
-		public ServerException Error {
-			get {
-				if (Success) {
-					return null;
-				}
-				var err = Args<Dictionary<string, object>>(0);
-				object name = err.TryGetValue("name", out name) ? name : "";
-				return new ServerException((string)name, (string)err["bt"], (List<object>)err["args"]);
+		public override ServerException Error(Serde sr) {
+			if (Success) {
+				return null;
 			}
+			var err = Args<Dictionary<string, object>>(0);
+			object name = err.TryGetValue("name", out name) ? name : "";
+			return new ServerException((string)name, (string)err["bt"], (List<object>)err["args"]);
 		}		
 	}
 	public delegate object ResponseDelegate(Response resp, Exception e);
@@ -214,9 +212,9 @@ namespace Yue
 			_bt = bt;
 			_args = args;			
 		}
-		public string Message {
+		public override string Message {
 			get {
-				return _name + _bt;
+				return _name + _bt + (_args.Length > 0 ? "\n" + _args[0] : "");
 			}
 		}
 	};
@@ -225,7 +223,7 @@ namespace Yue
 		public HttpRequestException(string err) {
 			_error = err;
 		}
-		public string Message {
+		public override string Message {
 			get {
 				return _error;
 			}
@@ -478,8 +476,7 @@ namespace Yue
 									}
 								}
 							}
-							catch (MsgPack.BuffShortException e) {
-								//Debug.Log(e);
+							catch (MsgPack.BuffShortException) {
 							}
 							catch (IOException e) {
 								Debug.Log("socket may be closed:"+e);
@@ -519,9 +516,8 @@ namespace Yue
 					try {
 						var obj = ctx.ReadStream();
 						if (obj != null) {
-							var args = (List<object>)obj;
 							var r = new WebResponse(obj);
-							var err = r.Error;
+							var err = r.Error(serde);
 							if (err != null) {
 								ctx.d(null, err);
 							}
