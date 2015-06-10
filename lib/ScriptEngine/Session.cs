@@ -128,7 +128,10 @@ namespace Yue {
 		}
 		//this will be overwritten by child.
 		public virtual void Play(string type, Dictionary<object, object> dict) {
-			Debug.Log("Play:"+type+"|"+Json.Serialize(dict));
+			Debug.LogError("Play: don't wanna handle it?:"+type+"|"+Json.Serialize(dict));
+		}
+		public virtual void Play(string type, object[] list) {
+			Debug.LogError("Play: don't wanna handle it?:"+type+"|"+Json.Serialize(list));
 		}
 	}
 }

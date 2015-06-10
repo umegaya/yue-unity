@@ -167,7 +167,7 @@ namespace YueUnityTest {
 			}		
 		}
 		
-		void Update() {
+		new void Update() {
 			this.Cooldown -= Time.deltaTime;
 			if (this.Cooldown < 0.0) {
 				this.Cooldown = 0.0;

@@ -356,7 +356,7 @@ namespace Yue
 					throw new FormatException();
 				}
 				s.Connect(hostname, int.Parse(port));
-				Debug.Log("Connect To:" + proto + "|" + hostname + "|" + port);
+				//Debug.Log("Connect To:" + proto + "|" + hostname + "|" + port);
 				return s;
 			}
 			else {
@@ -423,7 +423,7 @@ namespace Yue
 		}
 		static public object CallMethodOnTheFly(object o, string method, object[] args) {
 			Type t = o.GetType();
-			MethodInfo m = t.GetMethod(method);
+			MethodInfo m = t.GetMethod(method, new Type[] { typeof(string), args[1].GetType() });
 			if (m != null) {
 				return m.Invoke(o, args);
 			}
