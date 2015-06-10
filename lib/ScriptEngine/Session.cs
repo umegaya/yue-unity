@@ -68,7 +68,7 @@ namespace Yue {
 				if (string.IsNullOrEmpty(user_id)) {
 					throw new System.Exception("user_id should specified for remote mode");
 				}
-				NetworkManager.instance.Register("/player", this);
+				NetworkManager.instance.Register("/"+user_id, this);
 				_login_state = gf.CreateRemoteField ? State.PUT_USER_DATA : State.REQUEST_OTP;
 			}
 		}

@@ -12,11 +12,11 @@ namespace YueUnityTest {
 		public Dictionary<object, object> SceneData { get; set; }
 		public string Winner { get; set; }
 		public double Cooldown { get; set; }
-		public double UserId { get; set; }
+		public string UserId { get; set; }
 		public bool IsMyHero(object h) {
 			var d = (Dictionary<object, object>)h;
 			//Debug.Log("ismyhero:" + UserId + "|" + UserId.GetType() + "|" + d["OwnerId"] + "|" + d["OwnerId"].GetType());
-			return UserId == ((double)d["OwnerId"]);
+			return UserId == d["OwnerId"].ToString();
 		}
 		void SetupList() {
 			var es = (Dictionary<object, object>)this.SceneData["EnemySide"];
@@ -229,7 +229,7 @@ namespace YueUnityTest {
 		public override void Play(string type, Dictionary<object, object> dict) {
 			//Debug.Log(UserId+":Play:"+type+"|"+Json.Serialize(dict));
 			if (type == "init") {
-				this.UserId = (double)dict["UserId"];
+				this.UserId = dict["UserId"].ToString();
 				this.SceneData = dict;
 				SetupList();
 				ShuffleSkillSelection();
