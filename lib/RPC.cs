@@ -1,11 +1,13 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Reflection;
 using MsgPack;
+using MiniJSON;
 using Serde = MsgPack.BoxingPacker;
 using UnityEngine;
 
@@ -16,27 +18,63 @@ namespace Yue
 		public ResponseDelegate d;
 		public float timeout_at;
 	};
+	class WebYieldContext : YieldContext {
+		Curl _www;
+		IEnumerator _reader;
+		public WebYieldContext(CallAttr attr, ResponseDelegate d, string url, 
+			object[] args, Dictionary<string, object> headers) {
+			var str = Json.Serialize(args);
+			byte[] body = System.Text.Encoding.ASCII.GetBytes(str);
+			this.d = d;
+			this.timeout_at = Time.time + attr.timeout;
+			//Debug.Log("WWW parm:" + url + "|" + str + "|" + headers);
+			_www = new Curl(url, body, headers);
+			_reader = Start();
+		}
+		IEnumerator Start() {
+			while (!_www.isDone) {
+				yield return _www;
+			}
+			if (!string.IsNullOrEmpty(_www.error)) {
+				Debug.Log("http error:" + _www.error);
+				throw new HttpRequestException(_www.error);
+			}
+		}
+		public object ReadStream() {
+			if (_reader.MoveNext()) {
+				return null;
+			}
+			var bs = System.Text.Encoding.ASCII.GetString(_www.bytes);
+			if (bs == null) {
+				Debug.Log("get ascii string fails");
+			}
+			Debug.Log("response:" + bs);
+			return Json.Deserialize(bs);
+		}
+	}
 	public class CallAttr {
 		public bool notify;
 		public bool async;
 		public float timeout;
 	};
 	public class Response {
-		object _obj;
+		protected object _obj;
+		public Response() {}
 		public Response(object o) {
 			_obj = o;
-			/*int count = 0;
+			/*
+			int count = 0;
 			foreach (var ob in Data) {
 				Debug.Log("Data:"+count+"|"+ob);
 				count++;
-			}*/
+			}//*/
 		}
 		public object[] Data {
 			get {
 				return ((object[])_obj);
 			}
 		}
-		public uint Kind {
+		public virtual uint Kind {
 			get {
 				//Debug.Log("Kind:" + ((object[])_obj)[0].GetType());
 				return (uint)(double)Data[0];
@@ -44,7 +82,8 @@ namespace Yue
 		}
 		public bool ServerCall {
 			get {
-				return (Kind == Connection.KIND_CALL) || (Kind == Connection.KIND_SEND);
+				var k = (Kind & 3);
+				return (k == Connection.KIND_CALL) || (k == Connection.KIND_SEND);
 			}
 		}
 		public bool ServerResponse {
@@ -59,10 +98,10 @@ namespace Yue
 		}
 		public string Method {
 			get {
-				return (string)Data[3];
+				return (string)Data[MethodIndex];
 			}
 		}
-		public ServerException Error(Serde sr) {
+		public virtual ServerException Error(Serde sr) {
 			if (Success) {
 				return null;
 			}
@@ -96,6 +135,11 @@ namespace Yue
 				return ServerResponse ? 1 : (ServerCall ? 2 : -1);
 			}			
 		}
+		int MethodIndex {
+			get {
+				return ServerNotify ? 2 : 3;
+			}
+		}
 		public bool Success {
 			get {
 				//see ArgsIndex's comment. 
@@ -123,6 +167,27 @@ namespace Yue
 			}
 		}
 	};
+	public class WebResponse : Response {
+		public WebResponse(object o) : base() {
+			if (o.GetType().GetGenericTypeDefinition() == typeof(List<>)) {
+				var l = o as List<object>;
+				_obj = l.ToArray();
+			}
+		}
+		public override uint Kind {
+			get {
+				return (uint)(System.Int64)Data[0];
+			}
+		}
+		public override ServerException Error(Serde sr) {
+			if (Success) {
+				return null;
+			}
+			var err = Args<Dictionary<string, object>>(0);
+			object name = err.TryGetValue("name", out name) ? name : "";
+			return new ServerException((string)name, (string)err["bt"], (List<object>)err["args"]);
+		}		
+	}
 	public delegate object ResponseDelegate(Response resp, Exception e);
 	public delegate void ConnectionStateDelegate(string url, bool opened); //true if connection opened, otherwise closed.
 
@@ -134,20 +199,36 @@ namespace Yue
 		}
 	};
 	public class ServerException : Exception {
-		public string _name;
-		public string _bt;
-		public object[] _args;
+		string _name;
+		string _bt;
+		object[] _args;
+		public ServerException(string name, string bt, List<object> args) {
+			_name = string.IsNullOrEmpty(name) ? "" : name;
+			_bt = bt;
+			_args = args.ToArray();			
+		}
 		public ServerException(string name, string bt, object[] args) {
 			_name = name;
 			_bt = bt;
 			_args = args;			
 		}
-		public string Message {
+		public override string Message {
 			get {
-				return _name + "\n" + _bt;
+				return _name + (_args.Length > 0 ? (_name.Length > 0 ? "," : "") + _args[0] : "") + _bt;
 			}
 		}
 	};
+	public class HttpRequestException : Exception {
+		string _error;
+		public HttpRequestException(string err) {
+			_error = err;
+		}
+		public override string Message {
+			get {
+				return _error;
+			}
+		}
+	}
 
 	//connection
 	public class Connection {
@@ -275,7 +356,7 @@ namespace Yue
 					throw new FormatException();
 				}
 				s.Connect(hostname, int.Parse(port));
-				Debug.Log("Connect To:" + proto + "|" + hostname + "|" + port);
+				//Debug.Log("Connect To:" + proto + "|" + hostname + "|" + port);
 				return s;
 			}
 			else {
@@ -288,6 +369,8 @@ namespace Yue
 		static Dictionary<string, Connection> connections = new Dictionary<string, Connection>();
 		static List<Connection> closed = new List<Connection>();
 		static Dictionary<uint, YieldContext> dispatchers = new Dictionary<uint, YieldContext>();
+		static List<WebYieldContext> web_dispatchers = new List<WebYieldContext>();
+		static List<WebYieldContext> web_closed = new List<WebYieldContext>();
 		static Dictionary<string, object> delegates = new Dictionary<string, object>();
 		static Dictionary<string, ConnectionStateDelegate> watchers = new Dictionary<string, ConnectionStateDelegate>();
 		static List<Socket> sockets = new List<Socket>();
@@ -317,6 +400,11 @@ namespace Yue
 				tmp -= d;
 			}
 		}
+		static public void DispatchViaHttp(CallAttr attr, ResponseDelegate d, string url, 
+			object[] args = null, Dictionary<string, object> headers = null) {
+			var ctx = new WebYieldContext(attr, d, url, args, headers);
+			web_dispatchers.Add(ctx);
+		}
 		static public uint NewMsgId() {
 			seed++;
 			return seed;
@@ -335,7 +423,7 @@ namespace Yue
 		}
 		static public object CallMethodOnTheFly(object o, string method, object[] args) {
 			Type t = o.GetType();
-			MethodInfo m = t.GetMethod(method);
+			MethodInfo m = t.GetMethod(method, new Type[] { typeof(string), args[1].GetType() });
 			if (m != null) {
 				return m.Invoke(o, args);
 			}
@@ -352,6 +440,7 @@ namespace Yue
 					foreach (KeyValuePair<string, Connection> pair in connections) {
 						var c = pair.Value;
 						if (s == c.Socket) {
+						again:
 							try {
 								YieldContext ctx;
 								var obj = c.ReadStream();
@@ -367,6 +456,7 @@ namespace Yue
 											ctx.d(resp, null);
 										}
 									}
+									goto again;
 								}
 								else if (resp.ServerCall) {
 									object o;
@@ -377,16 +467,19 @@ namespace Yue
 												c.WriteStream(MakeResponse(resp, body, null));
 											}
 										}
+										else {
+											Debug.Log("UUID not found:" + resp.UUID);
+										}
 									}
 									catch (Exception e) {
 										if (!resp.ServerNotify) {
 											c.WriteStream(MakeResponse(resp, null, e.Message + " " + e.StackTrace));
 										}										
 									}
+									goto again;
 								}
 							}
-							catch (MsgPack.BuffShortException e) {
-								//Debug.Log(e);
+							catch (MsgPack.BuffShortException) {
 							}
 							catch (IOException e) {
 								Debug.Log("socket may be closed:"+e);
@@ -415,6 +508,42 @@ namespace Yue
 					ctx.d(null, new RPCTimeoutException(ctx.timeout_at));
 				}
 			}
+			//web request polling
+			foreach (WebYieldContext ctx in web_dispatchers) {
+				if (ctx.timeout_at < now) {
+					web_dispatchers.Remove(ctx);
+					ctx.d(null, new RPCTimeoutException(ctx.timeout_at));
+					web_closed.Add(ctx);
+				}
+				else {
+					try {
+						var obj = ctx.ReadStream();
+						if (obj != null) {
+							var r = new WebResponse(obj);
+							var err = r.Error(serde);
+							if (err != null) {
+								ctx.d(null, err);
+							}
+							else {
+								ctx.d(r, null);
+							}
+							web_closed.Add(ctx);
+						}
+						//obj == null is not error. it shows request not finished yet.
+					}
+					catch (Exception e) {
+						ctx.d(null, e);
+						web_closed.Add(ctx);
+					}
+				}
+			}
+			//delete closing web requests.
+			if (web_closed.Count > 0) {
+				foreach (WebYieldContext c in web_closed) {
+					web_dispatchers.Remove(c);
+				}
+				web_closed.Clear();				
+			}
 		}
 
 		static object[] MakeResponse(Response resp, object body, string error) {
@@ -433,8 +562,8 @@ namespace Yue
 		}
 	}
 	public class Actor {
-		static CallAttr attr = new CallAttr();
-		public ConnectionStateDelegate watcher;
+		static protected CallAttr attr = new CallAttr();
+		public ConnectionStateDelegate _watcher = null;
 		public void DefaultConnectionWatcher(string url, bool opened) {
 			if (opened) {
 				Debug.Log("connection open:" + url);
@@ -443,24 +572,25 @@ namespace Yue
 				Debug.Log("connection close:" + url);			
 			}			
 		}
+		public Actor() {}
 		public Actor(string url, ConnectionStateDelegate d = null) {
 			Parse(url);
 			if (d == null) {
 				d = DefaultConnectionWatcher;
 			}
-			watcher = d;
-			TransportManager.AddWatcher(URL, watcher);
+			_watcher = d;
+			TransportManager.AddWatcher(URL, _watcher);
 		}
 		public void Destroy() {
-			if (watcher != null) {
-				TransportManager.RemoveWatcher(URL, watcher);
-			}			
+			if (_watcher != null) {
+				TransportManager.RemoveWatcher(URL, _watcher);
+			}	
 		}
 		public string Id { get; set; }
 		public string Host { get; set; }
 		public string Proto { get; set; }
 		public string URL { get { return Proto+"://"+Host; } }
-		public void Call(ResponseDelegate d, string method, params object[] args) {
+		public virtual void Call(ResponseDelegate d, string method, params object[] args) {
 			try {
 				var c = TransportManager.Get(URL);
 				string real_method = ParseMethodName(method, args, ref attr);
@@ -477,13 +607,13 @@ namespace Yue
 				d(null, e);
 			}
 		}
-		string ParseMethodName(string method, object[] args, ref CallAttr attr) {
+		protected string ParseMethodName(string method, object[] args, ref CallAttr attr) {
 			attr.notify = false;
 			attr.async = false;
 			attr.timeout = 5000;
 			return method;
 		}
-		void Parse(string url) {
+		protected void Parse(string url) {
 			var m = Regex.Match(url, @"([^:/]+?)://([^/]+)(/.*)");
 			if (m.Success) {
 				Proto = m.Groups[1].Value;
@@ -492,6 +622,20 @@ namespace Yue
 			}
 			else {
 				throw new FormatException();
+			}
+		}
+	}
+	public class WebActor : Actor {
+		public WebActor(string url) : base() {
+			Parse(url);			
+		}
+		public override void Call(ResponseDelegate d, string method, params object[] args) {
+			try {
+				string real_method = ParseMethodName(method, args, ref attr);
+				TransportManager.DispatchViaHttp(attr, d, URL + Id + "/" + real_method, args);
+			}
+			catch (Exception e) {
+				d(null, e);
 			}
 		}
 	}
