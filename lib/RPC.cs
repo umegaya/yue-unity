@@ -203,7 +203,7 @@ namespace Yue
 		string _bt;
 		object[] _args;
 		public ServerException(string name, string bt, List<object> args) {
-			_name = string.IsNullOrEmpty(name) && (args[0] is string) ? ((string)args[0]) : name;
+			_name = string.IsNullOrEmpty(name) ? "" : name;
 			_bt = bt;
 			_args = args.ToArray();			
 		}
@@ -214,7 +214,7 @@ namespace Yue
 		}
 		public override string Message {
 			get {
-				return _name + _bt + (_args.Length > 0 ? "\n" + _args[0] : "");
+				return _name + (_args.Length > 0 ? (_name.Length > 0 ? "," : "") + _args[0] : "") + _bt;
 			}
 		}
 	};
@@ -440,6 +440,7 @@ namespace Yue
 					foreach (KeyValuePair<string, Connection> pair in connections) {
 						var c = pair.Value;
 						if (s == c.Socket) {
+						again:
 							try {
 								YieldContext ctx;
 								var obj = c.ReadStream();
@@ -455,6 +456,7 @@ namespace Yue
 											ctx.d(resp, null);
 										}
 									}
+									goto again;
 								}
 								else if (resp.ServerCall) {
 									object o;
@@ -474,6 +476,7 @@ namespace Yue
 											c.WriteStream(MakeResponse(resp, null, e.Message + " " + e.StackTrace));
 										}										
 									}
+									goto again;
 								}
 							}
 							catch (MsgPack.BuffShortException) {

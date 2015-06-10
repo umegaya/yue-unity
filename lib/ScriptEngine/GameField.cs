@@ -83,7 +83,7 @@ namespace Yue {
 		}
 		public void InitRemoteWithCreateField(string login_url, object game_fix_data, object field_data) {
 			CleanUp();
-			_field_data = Json.Serialize(field_data);
+			_field_data = ToJson(field_data);
 			_game_fix_data = ToJson(game_fix_data);
 			_login_actor = NetworkManager.instance.NewActor(login_url);
 			_boot_state = State.CONFIGURE_DATA;
@@ -135,14 +135,14 @@ namespace Yue {
 					Debug.Log("CONFIGURE_DATA");
 					ActorCall(_login_actor, (resp) => {
 						_boot_state = State.OPEN_FIELD;
-					}, "configure", _game_fix_data);
+					}, "configure", Json.Deserialize(_game_fix_data));
 					break;
 				case State.OPEN_FIELD:
 					Debug.Log("OPEN_FIELD");
 					ActorCall(_login_actor, (resp) => {
 						_field_id = ((string)resp.Args(0));
 						_boot_state = State.OPENED;
-					}, "open_field", _field_data);
+					}, "open_field", Json.Deserialize(_field_data));
 					break;
 				}
 				_boot_state = State.ON_REQUEST;

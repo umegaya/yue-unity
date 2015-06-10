@@ -59,6 +59,9 @@ namespace Yue {
 				_login_state = State.LOCAL_ENTER;
 			}
 			else {
+				if (string.IsNullOrEmpty(user_id)) {
+					throw new System.Exception("user_id should specified for remote mode");
+				}
 				NetworkManager.instance.Register("/player", this);
 				_login_state = gf.CreateRemoteField ? State.PUT_USER_DATA : State.REQUEST_OTP;
 			}
@@ -88,7 +91,7 @@ namespace Yue {
 				Debug.Log("PUT_USER_DATA");
 				_gf.ActorCall(_gf.LoginActor, (resp) => {
 					_login_state = State.REQUEST_OTP;
-				}, "put_user_data", _user_data);
+				}, "put_user_data", user_id, _user_data);
 				break;
 			case State.REQUEST_OTP:
 				Debug.Log("REQUEST_OTP");
