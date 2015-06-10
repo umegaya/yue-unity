@@ -79,6 +79,10 @@ namespace YueUnityTest {
 			text = text+string.Format("HP {0}/{1}:", d["Hp"], d["MaxHp"]);
 			text = text+string.Format("WP {0}/{1}", d["Wp"], d["MaxWp"]);
 			object b;
+			double hp = (double)d["Hp"];
+			if (hp <= 0) {
+				d["IsDead"] = true;
+			}
 			if (d.TryGetValue("IsDead", out b)) {
 				text = text+":(dead)";
 			}
