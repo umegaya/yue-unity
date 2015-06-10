@@ -95,6 +95,9 @@ namespace Yue {
 				break;
 			case State.REQUEST_OTP:
 				Debug.Log("REQUEST_OTP");
+				if (string.IsNullOrEmpty(_gf.FieldId)) {
+					return; //wait for field creation completion.
+				}
 				_gf.ActorCall(_gf.LoginActor, (resp) => {
 					_otp = ((string)resp.Args(0));
 					_actor = NetworkManager.instance.NewActor(url + _gf.FieldId);
