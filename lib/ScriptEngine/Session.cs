@@ -11,6 +11,7 @@ namespace Yue {
 		const string DUMMY_OTP = "otp";
 		//login progress state for remote mode
 		public enum State {
+			WAIT_FIELD = -7,
 			LOCAL_ENTER = -6,
 			NOT_ACTIVE = -5,
 			ON_REQUEST = -4,
@@ -55,7 +56,12 @@ namespace Yue {
 		}
 	
 		public void Enter(GameField gf, object user_data) {
-			if (gf.LocalMode) {
+			_user_data = user_data;
+			_gf = gf;
+			if (!gf.Ready) {
+				_login_state = State.WAIT_FIELD;
+			}
+			else if (gf.LocalMode) {
 				_login_state = State.LOCAL_ENTER;
 			}
 			else {
@@ -65,23 +71,24 @@ namespace Yue {
 				NetworkManager.instance.Register("/player", this);
 				_login_state = gf.CreateRemoteField ? State.PUT_USER_DATA : State.REQUEST_OTP;
 			}
-			_user_data = user_data;
-			_gf = gf;
 		}
 	
 		//override behavior
 		protected void Update () {
 			switch (_login_state) {
-			case State.LOCAL_ENTER:
+			case State.WAIT_FIELD:
 				if (_gf.Ready) {
-					Debug.Log("LOCAL_ENTER");
-					_gf.Call("Enter", delegate (object []rvs, object err) {
-						if (rvs != null) {
-							user_id = ((double)rvs[0]).ToString();
-						}
-					}, DUMMY_OTP, this, Json.Serialize(_user_data));
-					_login_state = State.LOGIN;
+					Enter(_gf, _user_data);
 				}
+				return;
+			case State.LOCAL_ENTER:
+				Debug.Log("LOCAL_ENTER");
+				_gf.Call("Enter", delegate (object []rvs, object err) {
+					if (rvs != null) {
+						user_id = ((double)rvs[0]).ToString();
+					}
+				}, DUMMY_OTP, this, Json.Serialize(_user_data));
+				_login_state = State.LOGIN;
 				return;
 			case State.NOT_ACTIVE:
 			case State.ON_REQUEST:

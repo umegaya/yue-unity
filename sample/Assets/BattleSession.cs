@@ -4,7 +4,7 @@ using YueUnityTest;
 using System.Collections.Generic;
 
 namespace YueUnityTest {
-	public class Renderer : Yue.Session {
+	public class BattleSession : Yue.Session {
 		//use for random input
 		System.Random _prng = new System.Random();
 		//declare rendering data structure. 
@@ -12,11 +12,23 @@ namespace YueUnityTest {
 		public Dictionary<object, object> SceneData { get; set; }
 		public string Winner { get; set; }
 		public double Cooldown { get; set; }
-		public object[] Enemy() {
-			return ((object[])((Dictionary<object, object>)this.SceneData["EnemySide"])["normal_battle_enemy"]);
+		public double UserId { get; set; }
+		public bool IsMyHero(object h) {
+			var d = (Dictionary<object, object>)h;
+			//Debug.Log("ismyhero:" + UserId + "|" + UserId.GetType() + "|" + d["OwnerId"] + "|" + d["OwnerId"].GetType());
+			return UserId == ((double)d["OwnerId"]);
 		}
-		public object[] Hero() {
-			return ((object[])((Dictionary<object, object>)this.SceneData["UserSide"])["normal_battle_user"]);
+		void SetupList() {
+			var es = (Dictionary<object, object>)this.SceneData["EnemySide"];
+			es["normal_battle_enemy"] = new List<object>(((object[])es["normal_battle_enemy"]));
+			var us = (Dictionary<object, object>)this.SceneData["UserSide"];
+			us["normal_battle_user"] = new List<object>(((object[])us["normal_battle_user"]));
+		}
+		public List<object> Enemy() {
+			return ((List<object>)((Dictionary<object, object>)this.SceneData["EnemySide"])["normal_battle_enemy"]);
+		}
+		public List<object> Hero() {
+			return ((List<object>)((Dictionary<object, object>)this.SceneData["UserSide"])["normal_battle_user"]);
 		}
 		public Dictionary<object, object> FindObjectById(object idobj) {
 			double id = (double)idobj;
@@ -33,6 +45,42 @@ namespace YueUnityTest {
 				}
 			}
 			return null;
+		}
+		public Dictionary<object, object> RemoveObjectById(object idobj) {
+			double id = (double)idobj;
+			var enemy = Enemy();
+			for (var i = 0; i < enemy.Count; i++) {
+				var d = (Dictionary<object, object>)enemy[i];
+				if (((double)d["TargetId"]) == id) {
+					enemy.RemoveAt(i);
+					return d;
+				}
+			}
+			var hero = Hero();
+			for (var i = 0; i < hero.Count; i++) {
+				var d = (Dictionary<object, object>)hero[i];
+				if (((double)d["TargetId"]) == id) {
+					hero.RemoveAt(i);
+					return d;
+				}
+			}
+			return null;
+		}
+		public void AddObject(Dictionary<object, object> obj) {
+			var target = FindObjectById(obj["TargetId"]);
+			if (target != null) {
+				foreach (var p in obj) {
+					target[p.Key] = p.Value;
+				}
+			}
+			else {
+				if ((string)obj["DispPos"] == "user") {
+					Hero().Add(obj);
+				}
+				else {
+					Enemy().Add(obj);
+				}
+			}
 		}
 		public void SetStateData(Dictionary<object, object> d) {
 			Dictionary<object, object> obj = FindObjectById(d["TargetId"]);
@@ -125,10 +173,12 @@ namespace YueUnityTest {
 			}
 			this.SkillSelection.Clear();
 			foreach (var e in Hero()) {
-				var d = (Dictionary<object, object>)e;
-				var skills = (object[])d["Skills"];
-				var idx = _prng.Next(0, skills.Length);
-				this.SkillSelection.Add((double)d["TargetId"], idx);
+				if (IsMyHero(e)) {
+					var d = (Dictionary<object, object>)e;
+					var skills = (object[])d["Skills"];
+					var idx = _prng.Next(0, skills.Length);
+					this.SkillSelection.Add((double)d["TargetId"], idx);
+				}
 			}
 		}
 		public string GetSkillIdByTargetAndIndex(double target_id, int index) {
@@ -175,54 +225,13 @@ namespace YueUnityTest {
 			base.Update();
 		}
 		
-		//display UI
-		const int BOX_WIDTH = 460;
-		const int BOX_HEIGHT = 540;
-		const int BOX_X = 10;
-		const int BOX_Y = 120;
-		const int MERGIN = 10;
-		const int BUTTON_X = BOX_X + MERGIN;
-		const int BUTTON_START_Y = BOX_Y + 2 * MERGIN;
-		const int BUTTON_WIDTH = BOX_WIDTH - 2 * MERGIN;
-		const int BUTTON_HEIGHT = 50;
-		void OnGUI () {
-			if (this.SceneData == null) {
-				return;
-			}
-	        // Make a background box
-	        GUI.Box(new Rect(BOX_X,BOX_Y,BOX_WIDTH,BOX_HEIGHT), BattleFieldText());
-	    
-			int cnt = 0;
-			foreach (var e in Enemy()) {
-				if (GUI.Button(new Rect(BUTTON_X, BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), EnemyText(e))) {
-					this.SendCommand(delegate (object []rvs, object err) {
-						if (rvs != null) {
-							this.Cooldown = (double)rvs[0];
-						}
-						else {
-							Debug.Log("cmderr:" + err);
-						}
-					}, BuildBattleCommand(e));
-					ShuffleSkillSelection();
-				}
-				cnt++;
-			}
-	
-			foreach (var e in Hero()) {
-				GUI.Label(new Rect(BUTTON_X, 10 + BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), HeroText(e));
-				cnt++;			
-			}
-			
-			if (GUI.Button(new Rect(BUTTON_X, BUTTON_START_Y + BUTTON_HEIGHT * cnt, BUTTON_WIDTH, BUTTON_HEIGHT), "Shuffle Skill Selection")) {
-				ShuffleSkillSelection();
-			}		
-	    }
-		
 		//battle event receiver.
 		public override void Play(string type, Dictionary<object, object> dict) {
-			//Debug.Log("Play:"+type+"|"+Json.Serialize(dict));
+			//Debug.Log(UserId+":Play:"+type+"|"+Json.Serialize(dict));
 			if (type == "init") {
+				this.UserId = (double)dict["UserId"];
 				this.SceneData = dict;
+				SetupList();
 				ShuffleSkillSelection();
 				this.Cooldown = 0;
 			}
@@ -237,6 +246,12 @@ namespace YueUnityTest {
 			}
 			else if (type == "end") {
 				this.Winner = (string)dict["Winner"];
+			}
+			else if (type == "enter") {
+				this.AddObject(dict);
+			}
+			else if (type == "exit") {
+				this.RemoveObjectById(dict["TargetId"]);
 			}
 			else if (type == "error") {
 				Debug.LogError(Json.Serialize(dict));
