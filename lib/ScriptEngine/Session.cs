@@ -30,7 +30,6 @@ namespace Yue {
 		object _user_data = null;
 		
 		//configurable variables 
-		public string url = "";
 		public string user_id = "";
 	
 		void Start () {
@@ -107,7 +106,7 @@ namespace Yue {
 				}
 				_gf.ActorCall(_gf.LoginActor, (resp) => {
 					_otp = ((string)resp.Args(0));
-					_actor = NetworkManager.instance.NewActor(url + _gf.FieldId);
+					_actor = NetworkManager.instance.NewActor(_gf.FieldId);
 					Debug.Log("generate otp:"+_otp+"@"+_gf.FieldId);
 					_login_state = State.REQUEST_ENTER;
 				}, "otp", _gf.FieldId, user_id);

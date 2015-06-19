@@ -45,6 +45,9 @@ namespace Yue
 				return this.responseData.ToArray();
 			}
 		}
+		public int status {
+			get; set; 
+		}
 		public string error {
 			get {
 				return this.exception != null ? this.exception.ToString() : null;
@@ -96,6 +99,9 @@ namespace Yue
 				/* 非同期要求を終了 */
 				System.Net.HttpWebResponse res =
 					(System.Net.HttpWebResponse) www.request.EndGetResponse(ar);
+
+				/* status code */
+				www.status = (int)res.StatusCode;
 					
 				/* 読み出し用ストリームを取得 */
 				www.responseStream = res.GetResponseStream();

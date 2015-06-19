@@ -49,7 +49,8 @@ namespace Yue
 				Debug.Log("get ascii string fails");
 			}
 			Debug.Log("response:" + bs);
-			return Json.Deserialize(bs);
+			List<object> resp_obj = (List<object>)Json.Deserialize(bs);
+			return resp_obj;
 		}
 	}
 	public class CallAttr {
@@ -57,6 +58,7 @@ namespace Yue
 		public bool async;
 		public float timeout;
 	};
+	//TODO ; it should be seperate call, send, response object.
 	public class Response {
 		protected object _obj;
 		public Response() {}
@@ -124,7 +126,7 @@ namespace Yue
 				return (uint)(double)Data[MsgidIndex];
 			}
 		}
-		int ArgsIndex {
+		protected virtual int ArgsIndex {
 			get {
 				//ServerResponse has result(boolean) as its first argument. so skip it.
 				return ServerResponse ? 3 : (ServerNotify ? 3 : (ServerCall ? 5 : -1));
@@ -176,7 +178,12 @@ namespace Yue
 		}
 		public override uint Kind {
 			get {
-				return (uint)(System.Int64)Data[0];
+				return Connection.KIND_RESPONSE;
+			}
+		}
+		protected override int ArgsIndex {
+			get {
+				return 1;
 			}
 		}
 		public override ServerException Error(Serde sr) {
@@ -185,8 +192,11 @@ namespace Yue
 			}
 			var err = Args<Dictionary<string, object>>(0);
 			object name = err.TryGetValue("name", out name) ? name : "";
-			return new ServerException((string)name, (string)err["bt"], (List<object>)err["args"]);
-		}		
+			if (err["args"].GetType().GetGenericTypeDefinition() == typeof(Dictionary<,>)) {
+				return new ServerException((string)name, (string)err["bt"], new object[0]);
+			}
+			return new ServerException((string)name, (string)err["bt"], ((List<object>)err["args"]).ToArray());
+		}
 	}
 	public delegate object ResponseDelegate(Response resp, Exception e);
 	public delegate void ConnectionStateDelegate(string url, bool opened); //true if connection opened, otherwise closed.
@@ -202,13 +212,8 @@ namespace Yue
 		string _name;
 		string _bt;
 		object[] _args;
-		public ServerException(string name, string bt, List<object> args) {
-			_name = string.IsNullOrEmpty(name) ? "" : name;
-			_bt = bt;
-			_args = args.ToArray();			
-		}
 		public ServerException(string name, string bt, object[] args) {
-			_name = name;
+			_name = string.IsNullOrEmpty(name) ? "" : name;
 			_bt = bt;
 			_args = args;			
 		}
