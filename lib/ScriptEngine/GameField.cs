@@ -9,13 +9,21 @@ namespace Yue {
 		//constants
 		//login progress state for remote mode
 		public enum State {
-			ON_REQUEST = -4,
-			NOT_START = -3,
-			CONFIGURE_DATA = -2,
-			OPEN_FIELD = -1,
-			OPENED = 0
+			ON_REQUEST = -2,
+			NOT_START = -1,
+			OPENED = 0,
+
+			REMOTE_CONFIGURE_DATA = -10,
+			REMOTE_OPEN_FIELD = -11,
+
+			MATCHING_CONFIGURE_DATA = -20,
 		};
-		
+		public enum Method {
+			LOCAL = 1,
+			MATCHING = 2,
+			REMOTE = 3,
+		};
+
 		//static variables	
 		static public float update_latency = 0.0f;
 		
@@ -26,9 +34,14 @@ namespace Yue {
 		//for remote mode
 		string _field_id = null; 	//field id to enter
 		Actor _login_actor = null;	//for remote execution
-		public State _boot_state = State.NOT_START;	//login progress state
 		string _game_fix_data = null;//fixed game data as json string
 		string _field_data = null;	//if not null, try to create field  
+		//for matching mode
+		string _queue_name = null; //queue name to enter
+		Dictionary<string, object> _queue_settings = null; //if queue is not created yet, queue will be created with this setting.
+
+		public State _boot_state = State.NOT_START;	//login progress state
+		Method _login_method = Method.LOCAL;	//login method for session
 	
 		//delegate and its default
 		public delegate void SuccessResponseDelegate(Response r);
@@ -57,7 +70,7 @@ namespace Yue {
 		public bool LocalMode { 
 			get { return _env != null; }
 		}
-		public bool CreateRemoteField {
+		public bool UseDummyWebsv {
 			get { return _field_data != null; }
 		}
 		public Actor LoginActor {
@@ -65,9 +78,19 @@ namespace Yue {
 		}
 		public string FieldId {
 			get { return _field_id; }
+			set { _field_id = value; }
 		}
 		public bool Ready {
 			get { return _boot_state == State.OPENED; }
+		}
+		public Method LoginMethod {
+			get { return _login_method; }
+		}
+		public string QueueName {
+			get { return _queue_name; }
+		}
+		public Dictionary<string, object> QueueSettings {
+			get { return _queue_settings; }
 		}
 		
 		//initialization
@@ -79,20 +102,42 @@ namespace Yue {
 			Call("InitFixData", null, _game_fix_data);
 			Call("Initialize", null, Json.Serialize(field_data));
 			_boot_state = State.OPENED;
+			_login_method = Method.LOCAL;
 			//*/
-		}
-		public void InitRemoteWithCreateField(string login_url, object game_fix_data, object field_data) {
-			CleanUp();
-			_field_data = ToJson(field_data);
-			_game_fix_data = ToJson(game_fix_data);
-			_login_actor = NetworkManager.instance.NewActor(login_url);
-			_boot_state = State.CONFIGURE_DATA;
 		}
 		public void InitRemote(string login_url, string field_id) {
 			CleanUp();
 			_field_id = field_id;
 			_login_actor = NetworkManager.instance.NewActor(login_url);
 			_boot_state = State.OPENED;
+			_login_method = Method.REMOTE;
+		}
+		public void InitRemoteWithCreateField(string login_url, object game_fix_data, object field_data) {
+			CleanUp();
+			_field_data = ToJson(field_data);
+			_game_fix_data = ToJson(game_fix_data);
+			_login_actor = NetworkManager.instance.NewActor(login_url);
+			_boot_state = State.REMOTE_CONFIGURE_DATA;
+			_login_method = Method.REMOTE;
+		}
+		public void InitMatching(string login_url, string queue_name, int group_size, object field_data) {
+			InitRemote(login_url, null);
+			_login_method = Method.MATCHING;
+			_queue_name = queue_name;
+			_queue_settings = new Dictionary<string, object> {
+				{ "field_data", field_data },
+				{ "group_size", group_size }
+			};
+		}
+		public void InitMatchingWithConfigure(string login_url, string queue_name, int group_size, object game_fix_data, object field_data) {
+			InitRemoteWithCreateField(login_url, game_fix_data, field_data);
+			_login_method = Method.MATCHING;
+			_boot_state = State.MATCHING_CONFIGURE_DATA;
+			_queue_name = queue_name;
+			_queue_settings = new Dictionary<string, object> {
+				{ "field_data", field_data },
+				{ "group_size", group_size }
+			};
 		}
 		void CleanUp() {
 			if (_env != null) {
@@ -131,18 +176,26 @@ namespace Yue {
 				case State.ON_REQUEST:
 				case State.OPENED:
 					return;
-				case State.CONFIGURE_DATA:
-					Debug.Log("CONFIGURE_DATA");
+				//for remote field creation (debug)
+				case State.REMOTE_CONFIGURE_DATA:
+					Debug.Log("REMOTE_CONFIGURE_DATA");
 					ActorCall(_login_actor, (resp) => {
-						_boot_state = State.OPEN_FIELD;
+						_boot_state = State.REMOTE_OPEN_FIELD;
 					}, "configure", Json.Deserialize(_game_fix_data));
 					break;
-				case State.OPEN_FIELD:
-					Debug.Log("OPEN_FIELD");
+				case State.REMOTE_OPEN_FIELD:
+					Debug.Log("REMOTE_OPEN_FIELD");
 					ActorCall(_login_actor, (resp) => {
 						_field_id = ((string)resp.Args(0));
 						_boot_state = State.OPENED;
-					}, "open_field", Json.Deserialize(_field_data));
+					}, "open_field", 5, Json.Deserialize(_field_data));
+					break;
+				//for matching field creation (debug)
+				case State.MATCHING_CONFIGURE_DATA:
+					Debug.Log("MATCHING_CONFIGURE_DATA");
+					ActorCall(_login_actor, (resp) => {
+						_boot_state = State.OPENED;
+					}, "configure", Json.Deserialize(_game_fix_data));
 					break;
 				}
 				_boot_state = State.ON_REQUEST;

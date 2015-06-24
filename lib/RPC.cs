@@ -190,12 +190,7 @@ namespace Yue
 			if (Success) {
 				return null;
 			}
-			var err = Args<Dictionary<string, object>>(0);
-			object name = err.TryGetValue("name", out name) ? name : "";
-			if (err["args"].GetType().GetGenericTypeDefinition() == typeof(Dictionary<,>)) {
-				return new ServerException((string)name, (string)err["bt"], new object[0]);
-			}
-			return new ServerException((string)name, (string)err["bt"], ((List<object>)err["args"]).ToArray());
+			return new ServerException(Args<Dictionary<string, object>>(0));
 		}
 	}
 	public delegate object ResponseDelegate(Response resp, Exception e);
@@ -213,13 +208,62 @@ namespace Yue
 		string _bt;
 		object[] _args;
 		public ServerException(string name, string bt, object[] args) {
+			Initialize(name, bt, args);
+		}
+		public ServerException(Dictionary<string, object> err) {
+			object name = err.TryGetValue("name", out name) ? name : "";
+			if (err["args"].GetType().GetGenericTypeDefinition() == typeof(Dictionary<,>)) {
+				Initialize((string)name, (string)err["bt"], new object[0]);
+				return;
+			}
+			Initialize((string)name, (string)err["bt"], ((List<object>)err["args"]).ToArray());	
+		}
+		protected void Initialize(string name, string bt, object[] args) {
 			_name = string.IsNullOrEmpty(name) ? "" : name;
 			_bt = bt;
 			_args = args;			
 		}
+		protected string StringifyArgs(object[] args) {
+			var list = new List<string>();
+			foreach (var a in _args) {
+				if (a.GetType().IsGenericType) {
+					if (a.GetType().GetGenericTypeDefinition() == typeof(Dictionary<,>)) {
+						var d = (Dictionary<string, object>)a;
+						if (d.ContainsKey("bt")) {
+							list.Add((new ServerException(d)).Message);
+						}
+						else {
+							list.Add(Json.Serialize(a));
+						}
+					}
+					else {
+						list.Add(
+							StringifyArgs(
+								((List<object>)a).ToArray()
+							)
+						);
+					}
+				}
+				else {
+					list.Add(a.ToString());
+				}
+			}
+			if (list.Count > 0) {
+				var message = list[0];
+				for (var i = 1; i < list.Count; i++) {
+					message += ("," + list[i]);
+				}
+				return message;
+			}
+			return "";
+		}
 		public override string Message {
 			get {
-				return _name + (_args.Length > 0 ? (_name.Length > 0 ? "," : "") + _args[0] : "") + _bt;
+				string message = "";
+				if (_args.Length > 0) {
+					message = StringifyArgs(_args);
+				}
+				return _name + (message.Length > 0 ? ((_name.Length > 0 ? "," : "") + message) : "") + _bt;
 			}
 		}
 	};

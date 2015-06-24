@@ -206,15 +206,17 @@ namespace YueUnityTest {
 		void Start () {
 			GameObject gfo = GameObject.Find("BattleField");
 			var bf = gfo.GetComponent<BattleField>();
-			if (bf.LocalMode) {
+			switch (bf.LoginMethod) {
+			case BattleField.Method.LOCAL:
 				Enter(bf, Fixture.UserData);
+				break;
+			case BattleField.Method.REMOTE:
+				Enter(bf, bf.UseDummyWebsv ? Fixture.UserData : null);
+				break;
+			case BattleField.Method.MATCHING:
+				Enter(bf, bf.UseDummyWebsv ? Fixture.UserData : null);
+				break;
 			}
-			else if (string.IsNullOrEmpty(bf.FieldId)) {
-				Enter(bf, Fixture.UserData);
-			}
-			else {
-				Enter(bf, null);
-			}		
 		}
 		
 		new void Update() {

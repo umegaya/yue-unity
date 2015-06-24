@@ -29,7 +29,11 @@ namespace YueUnityTest {
 				return;
 			}
 			BattleSession s = go.GetComponent<BattleSession>();
-			if (s == null || s.SceneData == null) {
+			if (s == null) { return; }
+			if (s.SceneData == null) {
+				if (s.MatchingWaitUser >= 0) {
+			        GUI.Box(new Rect(BOX_X,BOX_Y,BOX_WIDTH,BOX_HEIGHT), s.MatchingWaitUser.ToString() + " users wait for matching");
+				}
 				return;
 			}
 	        // Make a background box
